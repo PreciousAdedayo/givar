@@ -1,0 +1,24 @@
+@tailwind base; @tailwind components; @tailwind utilities;
+/* Palette comes from the Givar logo only: near-black + its yellow-green (#D8F24A). */
+:root {
+  --bg:#0a0a0a; --fg:#f5f6ef; --mut:#a3a69a; --line:rgba(255,255,255,.1); --card:rgba(255,255,255,.05);
+  --accent-text:#D8F24A; --on-grad:#11160a; --glow1:rgba(216,242,74,.14); --glow2:rgba(216,242,74,.05);
+  --grad-brand:linear-gradient(135deg,#EAFB7A 0%,#D8F24A 48%,#B6D626 100%);
+  --grad-dark:linear-gradient(135deg,#1c2210 0%,#0f130a 100%);
+  --grad-soft:linear-gradient(135deg,rgba(216,242,74,.22),rgba(216,242,74,.08));
+}
+:root:not(.dark) { --bg:#f7f8f1; --fg:#10130a; --mut:#5d6150; --line:rgba(16,19,10,.1); --card:rgba(255,255,255,.9); --accent-text:#4d6200; --glow1:rgba(216,242,74,.5); --glow2:rgba(216,242,74,.18); }
+body { color:var(--fg); min-height:100vh; background-attachment:fixed;
+  background:radial-gradient(52rem 34rem at 0% -8%,var(--glow1),transparent 60%),radial-gradient(46rem 32rem at 100% 0%,var(--glow2),transparent 58%),var(--bg); }
+.glass { background:var(--card); border:1px solid var(--line); backdrop-filter:blur(14px); }
+.grad-brand,.bg-lime-givar { background-image:var(--grad-brand); color:var(--on-grad); }
+.grad-dark { background-image:var(--grad-dark); color:#f5f6ef; border:1px solid rgba(216,242,74,.22); }
+.grad-soft { background-image:var(--grad-soft); color:var(--accent-text); border:1px solid rgba(216,242,74,.3); }
+.text-lime-givar { color:var(--accent-text); }
+/* Standard page container: same side/top padding on every page. Add a max-width per page. */
+.page { margin-left:auto; margin-right:auto; width:100%; padding:1.5rem 1rem; }
+@media (min-width:1024px) { .page { padding:2rem 2rem; } }
+.shadow-glow { box-shadow:0 18px 40px -16px rgba(216,242,74,.5); }
+@keyframes stamp { from { opacity:0; transform:translateY(10px) scale(.97) } to { opacity:1; transform:none } }
+.stamp { animation: stamp .7s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { .stamp { animation:none } }

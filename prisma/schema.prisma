@@ -1,0 +1,426 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// All money is stored in MINOR units (kobo / cents) as Int to avoid float errors.
+enum Role {
+  USER
+  ADMIN
+}
+enum Currency {
+  NGN
+  USD
+}
+enum KycStatus {
+  NONE
+  PENDING
+  VERIFIED
+  REJECTED
+}
+enum TxType {
+  DEPOSIT
+  WITHDRAWAL
+  ESCROW_LOCK
+  ESCROW_RELEASE
+  CLAIM_CREDIT
+  CONTEST_ENTRY
+  CONTEST_PRIZE
+  FEE
+  REFERRAL_BONUS
+}
+enum TxStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+enum Distribution {
+  EQUAL
+  RANDOM
+}
+enum ClaimType {
+  LINK
+  CODE
+}
+
+model User {
+  id String @id @default(cuid())
+  email String? @unique
+  phone String? @unique
+  name String?
+  image String?
+  passwordHash String?
+  emailVerified Boolean @default(false)
+  phoneVerified Boolean @default(false)
+  role Role @default(USER)
+  banned Boolean @default(false)
+  kyc KycStatus @default(NONE)
+  country String?
+  createdAt DateTime @default(now())
+  wallets Wallet[]
+  accounts VirtualAccount[]
+  giveaways Giveaway[]
+  claims Claim[]
+  entries ContestEntry[]
+  contests Contest[]
+  kycSubmissions KycSubmission[]
+  notifications Notification[]
+  notificationPref NotificationPref?
+  referralCode String? @unique
+  referredById String?
+  twoFactorSecret String?
+  twoFactorEnabled Boolean @default(false)
+  backupCodes String? // JSON array of sha256 hashes of unused backup codes
+  pinHash String?
+  pinFails Int @default(0)
+  pinLockedUntil DateTime?
+  sessionsValidAfter DateTime? // "sign out everywhere": any login older than this is rejected
+  chatMutedUntil DateTime?
+  loginSessions LoginSession[]
+  chatMessages ChatMessage[]
+  supportThreads SupportThread[]
+  cryptoDeposits CryptoDeposit[]
+}
+model Wallet {
+  id String @id @default(cuid())
+  userId String
+  currency Currency
+  balance Int @default(0)   // spendable
+  locked Int @default(0)    // held in escrow
+  user User @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+  @@unique([userId, currency])
+}
+model VirtualAccount {
+  id String @id @default(cuid())
+  userId String
+  currency Currency
+  provider String            // flutterwave | strowallet | stripe | mock
+  accountNumber String @unique
+  bankName String
+  accountName String
+  txRef String @unique
+  user User @relation(fields: [userId], references: [id])
+}
+model Giveaway {
+  id String @id @default(cuid())
+  creatorId String
+  title String
+  description String?
+  currency Currency @default(NGN)
+  totalAmount Int
+  escrowRemaining Int
+  winners Int
+  winnersLeft Int
+  distribution Distribution @default(EQUAL)
+  claimType ClaimType @default(LINK)
+  claimCode String @unique       // GV-8X2K91
+  claimSlug String @unique       // used in /c/[slug]
+  question String?
+  expiresAt DateTime
+  flagged Boolean @default(false)
+  cancelledAt DateTime?
+  mode String @default("SHARED") // SHARED = one link/code, first come first served | PERSONAL = a unique one-time code per winner
+  personalCodes PersonalCode[]
+  createdAt DateTime @default(now())
+  creator User @relation(fields: [creatorId], references: [id])
+  claims Claim[]
+  @@index([createdAt])
+}
+model Claim {
+  id String @id @default(cuid())
+  giveawayId String
+  userId String
+  phone String?
+  fingerprint String?
+  answer String?
+  amount Int
+  createdAt DateTime @default(now())
+  giveaway Giveaway @relation(fields: [giveawayId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+  // DB-level guarantee: one claim per user / phone / device per giveaway
+  @@unique([giveawayId, userId])
+  @@unique([giveawayId, phone])
+  @@unique([giveawayId, fingerprint])
+}
+model Contest {
+  id String @id @default(cuid())
+  hostId String
+  prize String
+  image String?
+  entryFee Int @default(0)
+  currency Currency @default(NGN)
+  maxEntries Int
+  endsAt DateTime
+  partner String?
+  winnerId String?
+  drawnAt DateTime?
+  deliveredAt DateTime?
+  cancelledAt DateTime?
+  createdAt DateTime @default(now())
+  host User @relation(fields: [hostId], references: [id])
+  entries ContestEntry[]
+}
+model ContestEntry {
+  id String @id @default(cuid())
+  contestId String
+  userId String
+  createdAt DateTime @default(now())
+  contest Contest @relation(fields: [contestId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+  @@unique([contestId, userId])
+}
+model Transaction {
+  id String @id @default(cuid())
+  walletId String
+  type TxType
+  status TxStatus @default(PENDING)
+  amount Int
+  reference String @unique   // idempotency key: webhooks can never double-credit
+  meta Json?
+  createdAt DateTime @default(now())
+  wallet Wallet @relation(fields: [walletId], references: [id])
+  @@index([walletId, createdAt])
+}
+model AnalyticsEvent {
+  id String @id @default(cuid())
+  type String                // pageview | signup | claim | webhook_failed ...
+  path String?
+  source String?
+  country String?
+  city String?
+  visitorId String?
+  meta Json?
+  createdAt DateTime @default(now())
+  @@index([type, createdAt])
+}
+
+// KYC review. We never store the raw BVN/NIN/ID number: only an HMAC hash (duplicate checks) and the last 4 digits.
+// ID photos are stored privately in the database and only served to admins.
+model KycSubmission {
+  id           String        @id @default(cuid())
+  userId       String
+  kind         String // BVN | NIN | PASSPORT | NATIONAL_ID | DRIVERS_LICENSE
+  idHash       String
+  idLast4      String
+  country      String
+  legalName    String?
+  dob          String?
+  address      String?
+  status       String        @default("PENDING") // PENDING | APPROVED | REJECTED
+  reviewedById String?
+  reviewedAt   DateTime?
+  rejectReason String?
+  createdAt    DateTime      @default(now())
+  user         User          @relation(fields: [userId], references: [id])
+  docs         KycDocument[]
+
+  @@index([idHash])
+  @@index([status, createdAt])
+}
+
+model KycDocument {
+  id           String        @id @default(cuid())
+  submissionId String
+  kind         String // ID_FRONT | SELFIE
+  mime         String
+  size         Int
+  data         Bytes
+  createdAt    DateTime      @default(now())
+  submission   KycSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+// Per-page SEO overrides, edited in Admin > SEO.
+model SeoPage {
+  path        String   @id
+  title       String?
+  description String?
+  ogImage     String?
+  canonical   String?
+  noindex     Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+}
+
+// Site-wide SEO settings (one row, id = "global").
+model SeoSettings {
+  id                  String   @id @default("global")
+  siteName            String   @default("Givar")
+  titleTemplate       String   @default("%s | Givar.app - Global Giveaway Platform")
+  defaultDescription  String?
+  ogImage             String?
+  twitterHandle       String?
+  googleVerification  String?
+  bingVerification    String?
+  robotsExtra         String? // extra "Disallow" paths, one per line
+  sameAs              String? // social profile URLs, one per line
+  updatedAt           DateTime @updatedAt
+}
+
+model PhoneOtp {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  phone     String
+  hash      String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+}
+
+model AuthToken {
+  id        String    @id @default(cuid())
+  userId    String
+  kind      String // VERIFY | RESET
+  hash      String    @unique // sha256 of the emailed token; the raw token is never stored
+  expiresAt DateTime
+  usedAt    DateTime?
+}
+
+model RateHit {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String
+  target    String
+  createdAt DateTime @default(now())
+}
+
+// In-app notifications. groupKey lets repeated events update ONE row (e.g. "12 of 50 claimed") instead of flooding the list.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String // DEPOSIT | WITHDRAWAL | CLAIM | GIVEAWAY | CONTEST | KYC | SECURITY | SYSTEM
+  title     String
+  body      String
+  href      String?
+  groupKey  String?
+  broadcastId String?
+  readAt    DateTime? // seen (opened the list or marked all read)
+  openedAt  DateTime? // tapped this notification
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupKey])
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@index([broadcastId])
+}
+
+model NotificationPref {
+  userId         String  @id
+  emailMoney     Boolean @default(true)
+  emailGiveaways Boolean @default(false)
+  emailContests  Boolean @default(true)
+  emailNews      Boolean @default(false)
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// One row per admin announcement, so open rates can be measured.
+model Broadcast {
+  id        String   @id @default(cuid())
+  adminId   String
+  title     String
+  body      String
+  href      String?
+  audience  String
+  sent      Int
+  createdAt DateTime @default(now())
+}
+
+// Messages for every chat room. roomKey: "g:<giveawayId>" | "c:<contestId>" | "s:<supportThreadId>".
+model ChatMessage {
+  id         String   @id @default(cuid())
+  roomKey    String
+  userId     String
+  body       String
+  fromStaff  Boolean  @default(false)
+  hidden     Boolean  @default(false)
+  hiddenById String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([roomKey, createdAt])
+}
+
+model ChatRead {
+  userId     String
+  roomKey    String
+  lastReadAt DateTime @default(now())
+
+  @@id([userId, roomKey])
+}
+
+model SupportThread {
+  id        String    @id @default(cuid())
+  userId    String
+  status    String    @default("OPEN") // OPEN | CLOSED
+  subject   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  closedAt  DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, updatedAt])
+}
+
+model LoginSession {
+  id         String    @id @default(cuid())
+  userId     String
+  ua         String?
+  ip         String?
+  country    String?
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model CryptoDeposit {
+  id         String    @id @default(cuid())
+  userId     String
+  coin       String // USDT | USDC | BTC | ETH
+  network    String // TRC20 | ERC20 | BEP20 | BTC | ETH
+  address    String
+  providerId String    @unique
+  usd        Int // expected amount in cents
+  status     String    @default("WAITING") // WAITING | CONFIRMING | CREDITED | EXPIRED | FAILED
+  createdAt  DateTime  @default(now())
+  creditedAt DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model ReferralReward {
+  id         String   @id @default(cuid())
+  referrerId String
+  referredId String   @unique
+  amount     Int
+  createdAt  DateTime @default(now())
+
+  @@index([referrerId])
+}
+
+// One row per winner when a giveaway uses personal codes. Each code can be redeemed exactly once.
+model PersonalCode {
+  id           String    @id @default(cuid())
+  giveawayId   String
+  code         String    @unique
+  amount       Int
+  redeemedById String?
+  redeemedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  giveaway     Giveaway  @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+
+  @@index([giveawayId])
+}

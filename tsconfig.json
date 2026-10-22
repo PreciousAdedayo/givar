@@ -1,0 +1,1 @@
+{"compilerOptions":{"target":"es2020","lib":["dom","esnext"],"strict":true,"module":"esnext","moduleResolution":"bundler","jsx":"preserve","noEmit":true,"esModuleInterop":true,"skipLibCheck":true,"isolatedModules":true,"incremental":true,"plugins":[{"name":"next"}],"paths":{"@/*":["./*"]}},"include":["**/*.ts","**/*.tsx"],"exclude":["node_modules"]}
