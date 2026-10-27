@@ -30,7 +30,14 @@ export default async function Security() {
         <div className="my-3 flex gap-1.5" role="img" aria-label={`${score} of ${checks.length} done`}>{checks.map((_, i) => <span key={i} className={`h-2 flex-1 rounded-full ${i < score ? "grad-brand" : "bg-[var(--line)]"}`} />)}</div>
         <ul className="space-y-1.5 text-sm">{checks.map(([ok, t, hint]) => <li key={t} className="flex items-center justify-between gap-3"><span>{ok ? "✓" : "○"} {t}</span>{!ok && <span className="text-xs text-[var(--mut)]">{hint}</span>}</li>)}</ul>
       </section>
-      <TwoFactorCard enabled={me.twoFactorEnabled} hasPassword={!!me.passwordHash} backupLeft={me.backupCodes ? (JSON.parse(me.backupCodes) as string[]).length : 0} />
+      <TwoFactorCard enabled={me.twoFactorEnabled} hasPassword={!!me.passwordHash} backupLeft={(() => {
+  try {
+    const codes: unknown = JSON.parse(me.backupCodes || "[]");
+    return Array.isArray(codes) ? codes.length : 0;
+  } catch {
+    return 0;
+  }
+})()} />
       <PinCard hasPin={!!me.pinHash} hasPassword={!!me.passwordHash} />
       <SessionsCard currentId={s.user.sid ?? ""} sessions={sessions.map((x) => ({ id: x.id, device: describeDevice(x.ua), country: x.country, ip: x.ip ? x.ip.replace(/(\d+\.\d+)\.\d+\.\d+/, "$1.•.•") : null, last: ago(x.lastSeenAt) }))} />
       <SecurityForm hasPassword={!!me.passwordHash} />
