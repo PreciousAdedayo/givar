@@ -92,7 +92,7 @@ export default async function Home() {
       )}
       {data && <div className="mb-5"><h1 className="sr-only text-3xl font-bold lg:not-sr-only lg:block">Welcome back, {first}</h1><p className="hidden text-[var(--mut)] lg:block">Here's what's happening with your money and giveaways.</p></div>}
 
-      <div className="grid gap-5 lg:grid-cols-12">
+      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-12">
         {nudge && <Link href={nudge.href} className="grad-dark flex items-center gap-3 rounded-2xl p-4 lg:order-first lg:col-span-12"><ShieldCheck size={26} aria-hidden /><span className="flex-1"><b className="block">{nudge.t}</b><span className="text-sm opacity-90">{nudge.d}</span></span><ChevronRight aria-hidden /></Link>}
 
         {data ? (
