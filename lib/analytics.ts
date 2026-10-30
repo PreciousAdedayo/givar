@@ -68,3 +68,39 @@ export async function loadAnalytics(f: Filters) {
   };
 }
 export type AnalyticsData = Awaited<ReturnType<typeof loadAnalytics>>;
+export async function loadOverviewAnalytics(f: Filters) {
+  const [views, signups] = await Promise.all([
+    prisma.$queryRaw<Q>(Prisma.sql`
+      SELECT date_trunc(${f.gran}, "createdAt") AS d,
+             count(*) AS a,
+             count(DISTINCT "visitorId") AS b
+      FROM "AnalyticsEvent"
+      WHERE type = 'pageview'
+        AND "createdAt" >= ${f.from}
+        AND "createdAt" < ${f.to}
+      GROUP BY 1
+      ORDER BY 1
+    `),
+    prisma.$queryRaw<Q>(Prisma.sql`
+      SELECT date_trunc(${f.gran}, "createdAt") AS d,
+             count(*) AS a
+      FROM "User"
+      WHERE "createdAt" >= ${f.from}
+        AND "createdAt" < ${f.to}
+      GROUP BY 1
+      ORDER BY 1
+    `),
+  ]);
+
+  return {
+    visitors: fill(f, {
+      views: toMap(views),
+      unique: new Map(
+        views.map((r) => [iso(r.d), Number(r.b ?? 0)])
+      ),
+    }),
+    signups: fill(f, {
+      signups: toMap(signups),
+    }),
+  };
+}

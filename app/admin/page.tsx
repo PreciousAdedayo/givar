@@ -3,7 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { fmt } from "@/lib/money";
 import { ago } from "@/lib/admin";
-import { loadAnalytics, parseFilters } from "@/lib/analytics";
+import { loadOverviewAnalytics, parseFilters } from "@/lib/analytics";
 import { Card, PageHead, Pill, Stat } from "@/components/admin/ui";
 import AnalyticsCharts from "@/components/admin/AnalyticsCharts";
 
@@ -13,8 +13,9 @@ export const dynamic = "force-dynamic";
 export default async function Overview() {
   const f = parseFilters({ r: "14" });
   const week = new Date(Date.now() - 7 * 864e5);
-  const [a, users, giveaways, contests, given, fees, pendingKyc, pendingWd, failed, flagged, newUsers, newKyc] = await Promise.all([
-    loadAnalytics(f),
+const a = await loadOverviewAnalytics(f);
+
+const [users, giveaways, contests, given, fees, pendingKyc, pendingWd, failed, flagged, newUsers, newKyc] = await Promise.all([
     prisma.user.count(), prisma.giveaway.count(), prisma.contest.count(), prisma.claim.aggregate({ _sum: { amount: true } }),
     prisma.transaction.aggregate({ _sum: { amount: true }, where: { type: "FEE", status: "SUCCESS", wallet: { currency: "NGN" } } }),
     prisma.kycSubmission.count({ where: { status: "PENDING" } }),
