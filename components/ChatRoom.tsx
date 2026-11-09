@@ -22,7 +22,7 @@ export default function ChatRoom({ roomKey, meId, draft = "", placeholder = "Wri
     setText(""); stick.current = true; if (j.room && j.room !== key) setKey(j.room); else load();
   }
   return (
-    <div className="glass flex h-[calc(100dvh-15rem)] min-h-[360px] flex-col overflow-hidden rounded-2xl lg:h-[calc(100dvh-14rem)]">
+    <div className="glass flex h-[calc(100dvh-17rem)] min-h-[320px] flex-col overflow-hidden rounded-2xl lg:h-[calc(100dvh-14rem)]">
       <div ref={box} onScroll={(e) => { const el = e.currentTarget; stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }} className="flex-1 space-y-3 overflow-y-auto p-4" role="log" aria-live="polite" aria-label="Messages">
         {ready && msgs.length === 0 && <p className="py-10 text-center text-sm text-[var(--mut)]">{empty}</p>}
         {msgs.map((m) => { const mine = m.userId === meId && !m.fromStaff; return (
@@ -37,7 +37,7 @@ export default function ChatRoom({ roomKey, meId, draft = "", placeholder = "Wri
       <form onSubmit={send} className="border-t border-[var(--line)] p-3">
         {err && <p role="alert" className="mb-2 text-xs text-red-500">{err}</p>}
         <div className="flex items-end gap-2">
-          <textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} rows={1} maxLength={500} placeholder={placeholder} aria-label="Message" className="max-h-28 min-h-[44px] flex-1 resize-none rounded-2xl border border-[var(--line)] bg-transparent px-4 py-2.5 text-sm outline-none focus:border-lime-givar" />
+          <textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} rows={1} maxLength={500} placeholder={placeholder} aria-label="Message" className="max-h-28 min-h-[44px] flex-1 resize-none rounded-2xl border border-[var(--line)] bg-transparent px-4 py-2.5 text-base outline-none focus:border-lime-givar sm:text-sm" />
           <button disabled={busy || !text.trim()} aria-label="Send message" className="bg-lime-givar grid h-11 w-11 shrink-0 place-items-center rounded-full disabled:opacity-50"><Send size={18} aria-hidden /></button>
         </div>
       </form>

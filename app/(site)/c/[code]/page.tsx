@@ -30,16 +30,16 @@ export default async function ClaimPage({ params, searchParams }: { params: { co
   const expired = g.expiresAt < new Date(), gone = g.winnersLeft === 0, cancelled = !!g.cancelledAt;
   const s = await getSession(), access = s ? await roomAccess(`g:${g.id}`, s.user.id, "USER") : null, isHost = !!s && s.user.id === g.creatorId;
   return (
-    <main className="page max-w-md lg:max-w-6xl"><Brand />
-      <div className="mt-4 grid gap-5 lg:mt-0 lg:grid-cols-[1.5fr_1fr] lg:items-start">
-        <section className="glass space-y-3 rounded-2xl p-5 sm:p-6 lg:col-start-1 lg:row-start-1">
+    <main className="page mx-auto min-w-0 max-w-md lg:max-w-6xl"><Brand />
+      <div className="mt-4 grid min-w-0 grid-cols-1 gap-5 lg:mt-0 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-start">
+        <section className="glass min-w-0 space-y-3 break-words rounded-2xl p-5 sm:p-6 lg:col-start-1 lg:row-start-1">
           <h1 className="text-2xl font-bold lg:text-3xl">{g.title}</h1>
           {g.description && <p className="text-[var(--mut)]">{g.description}</p>}
           <p className="text-4xl font-bold lg:text-5xl">{fmt(g.totalAmount, g.currency)}</p>
           <div className="h-2 overflow-hidden rounded-full bg-[var(--line)]"><div className="grad-brand h-full rounded-full" style={{ width: `${((g.winners - g.winnersLeft) / g.winners) * 100}%` }} /></div>
           <p className="text-sm text-[var(--mut)]">{g.winnersLeft} of {g.winners} prizes left · ends {g.expiresAt.toLocaleDateString("en")}</p>
         </section>
-        <aside className="glass space-y-4 rounded-2xl p-5 sm:p-6 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+        <aside className="glass min-w-0 space-y-4 break-words rounded-2xl p-5 sm:p-6 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1">
           <h2 className="text-lg font-semibold">Claim your share</h2>
           {cancelled ? <p className="text-red-500">This giveaway was cancelled by the host.</p> : expired ? <p className="text-red-500">This giveaway has expired.</p> : gone ? <p className="text-red-500">All prizes have been claimed.</p> : <ClaimButton code={g.claimSlug} question={g.question} personal={g.mode === "PERSONAL"} defaultCode={(searchParams.code ?? (/^GV-/i.test(params.code) ? params.code : "")).toUpperCase()} />}
           <ul className="space-y-1 border-t border-[var(--line)] pt-4 text-sm text-[var(--mut)]"><li>Verified phone number required</li><li>{g.mode === "PERSONAL" ? "Each code works once. Enter the code the host gave you" : "One claim per person"}</li><li>Money goes straight to your Givar wallet</li></ul>
@@ -48,7 +48,7 @@ export default async function ClaimPage({ params, searchParams }: { params: { co
         </aside>
         {winners.length > 0 && (
           <section className="glass rounded-2xl p-5 sm:p-6 lg:col-start-1 lg:row-start-2"><h2 className="font-semibold">Winners</h2>
-            <ul className="mt-2 divide-y divide-[var(--line)] text-sm">{winners.map((w) => <li key={w.id} className="flex justify-between py-2"><span>{mask(w.user.name)}</span><span className="text-[var(--mut)]">{fmt(w.amount, g.currency)} · {w.createdAt.toLocaleDateString("en")}</span></li>)}</ul></section>
+            <ul className="mt-2 divide-y divide-[var(--line)] text-sm">{winners.map((w) => <li key={w.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2"><span>{mask(w.user.name)}</span><span className="text-[var(--mut)]">{fmt(w.amount, g.currency)} · {w.createdAt.toLocaleDateString("en")}</span></li>)}</ul></section>
         )}
       </div>
     </main>

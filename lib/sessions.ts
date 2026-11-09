@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { prisma } from "./prisma";
 import { describeDevice } from "./device";
 import { notify } from "./notify";
+import { isListedAdmin, parseAdminEmails } from "./admin-list";
 
 /** Records a sign-in. Alerts the user if it comes from a device and country they haven't used before. */
 export async function startSession(userId: string) {
@@ -17,3 +18,14 @@ export async function startSession(userId: string) {
 /** Signs out every device except (optionally) the current one. */
 export const revokeOtherSessions = (userId: string, keepSid?: string) =>
   prisma.loginSession.updateMany({ where: { userId, revokedAt: null, ...(keepSid ? { NOT: { id: keepSid } } : {}) }, data: { revokedAt: new Date() } });
+
+/** Makes the owner an admin without touching the database: set ADMIN_EMAILS in your hosting settings, then sign in.
+ *  Only an email the user has VERIFIED counts (Google sign-in, or the link in the verification email), so nobody can
+ *  become admin by simply signing up with your address. */
+export async function promoteIfAdminEmail(userId: string) {
+  const list = parseAdminEmails(process.env.ADMIN_EMAILS); if (list.length === 0) return;
+  const u = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, emailVerified: true, role: true } });
+  if (!u || u.role === "ADMIN" || !u.emailVerified || !isListedAdmin(u.email, list)) return;
+  await prisma.user.update({ where: { id: userId }, data: { role: "ADMIN" } });
+  await prisma.auditLog.create({ data: { adminId: userId, action: "admin_promoted_by_ADMIN_EMAILS", target: userId } });
+}

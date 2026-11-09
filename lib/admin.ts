@@ -1,11 +1,12 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getSession } from "./session";
 
 /** Every admin page and action calls this. Non-admins get a 404, not a login hint. */
 export async function requireAdmin() {
   const s = await getSession();
-  if (s?.user.role !== "ADMIN") notFound();
-  return s!;
+  if (!s) redirect("/auth?next=/admin"); // signed out: go to sign-in (it reveals nothing)
+  if (s.user.role !== "ADMIN") notFound(); // signed in but not an admin: a plain 404
+  return s;
 }
 export const PAGE_SIZE = 25;
 export const pageNum = (v?: string) => Math.max(1, parseInt(v ?? "1", 10) || 1);

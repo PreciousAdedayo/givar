@@ -18,17 +18,17 @@ export default async function Feed({ searchParams }: { searchParams: { q?: strin
     orderBy: { createdAt: "desc" }, take: 30,
   });
   return (
-    <main className="page max-w-6xl">
+    <main className="page mx-auto min-w-0 max-w-6xl">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb([["Home", "/"], ["Live giveaways", "/giveaways"]])) }} />
       <h1 className="text-3xl font-bold">Live giveaways</h1>
       <p className="mt-1 hidden text-[var(--mut)] lg:block">{list.length} open right now. Claim one before it is gone.</p>
-      <div className="mt-5 lg:grid lg:grid-cols-[260px_1fr] lg:items-start lg:gap-6">
-      <form className="flex gap-2 lg:glass lg:sticky lg:top-6 lg:flex-col lg:rounded-2xl lg:p-4"><label htmlFor="q" className="hidden text-sm font-semibold lg:block">Search</label><input id="q" name="q" defaultValue={q} placeholder="Search giveaways" className="flex-1 rounded-xl border border-[var(--line)] bg-transparent px-4 py-3" />
-        <label htmlFor="c" className="hidden text-sm font-semibold lg:block">Currency</label><select id="c" name="c" defaultValue={searchParams.c ?? ""} className="rounded-xl border border-[var(--line)] bg-transparent px-3"><option value="">All</option><option>NGN</option><option>USD</option></select>
-        <button className="rounded-full bg-lime-givar px-5 font-semibold text-black">Search</button></form>
+      <div className="mt-5 grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start lg:gap-6">
+      <form className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] gap-2 lg:glass lg:sticky lg:top-6 lg:flex lg:flex-col lg:rounded-2xl lg:p-4"><label htmlFor="q" className="hidden text-sm font-semibold lg:block">Search</label><input id="q" name="q" defaultValue={q} placeholder="Search giveaways" className="w-full min-w-0 rounded-xl border border-[var(--line)] bg-transparent px-4 py-3" />
+        <label htmlFor="c" className="hidden text-sm font-semibold lg:block">Currency</label><select id="c" name="c" defaultValue={searchParams.c ?? ""} className="min-w-0 rounded-xl border border-[var(--line)] bg-transparent px-2 py-3 text-sm"><option value="">All</option><option>NGN</option><option>USD</option></select>
+        <button className="rounded-full bg-lime-givar px-3 py-3 text-sm font-semibold text-black sm:px-5">Search</button></form>
       {list.length === 0 ? <p className="mt-10 text-[var(--mut)]">No live giveaways match. <Link href="/create" className="underline">Create one</Link>.</p> :
-        <ul className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 lg:mt-0">{list.map((g) => (
-          <li key={g.id}><Link href={`/c/${g.claimSlug}`} className="glass block rounded-2xl p-5 transition hover:border-lime-givar">
+        <ul className="mt-2 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 lg:mt-0">{list.map((g) => (
+          <li key={g.id} className="min-w-0"><Link href={`/c/${g.claimSlug}`} className="glass block min-w-0 break-words rounded-2xl p-5 transition hover:border-lime-givar">
             <h2 className="font-semibold">{g.title}</h2><p className="mt-2 text-3xl font-bold">{fmt(g.totalAmount, g.currency)}</p>
             <p className="mt-1 text-sm text-[var(--mut)]">{g.winnersLeft} of {g.winners} left</p></Link></li>))}</ul>}
       </div>

@@ -82,7 +82,7 @@ export default async function Home() {
     <li key={c.id}><Link href={`/contests/${c.id}`} className="grad-dark flex items-center gap-3 rounded-2xl p-4"><Trophy size={26} aria-hidden /><span className="flex-1"><b className="block">{c.prize}</b><span className="text-sm opacity-90">{c.entryFee ? `Entry ${fmt(c.entryFee, c.currency)}` : "Free entry"} · {c._count.entries}/{c.maxEntries} joined</span></span><ChevronRight aria-hidden /></Link></li>));
 
   return (
-    <main className="page max-w-6xl">
+    <main className="page mx-auto min-w-0 max-w-6xl">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {data && (
         <div className="mb-4 flex items-center justify-between lg:hidden">
@@ -90,15 +90,15 @@ export default async function Home() {
           <span className="flex items-center gap-2"><ChatSlot /><BellSlot /><ThemeToggle /></span>
         </div>
       )}
-      {data && <div className="mb-5"><h1 className="sr-only text-3xl font-bold lg:not-sr-only lg:block">Welcome back, {first}</h1><p className="hidden text-[var(--mut)] lg:block">Here's what's happening with your money and giveaways.</p></div>}
+      {data && <div className="lg:mb-5"><h1 className="sr-only text-3xl font-bold lg:not-sr-only lg:block">Welcome back, {first}</h1><p className="hidden text-[var(--mut)] lg:block">Here's what's happening with your money and giveaways.</p></div>}
 
       <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-12">
         {nudge && <Link href={nudge.href} className="grad-dark flex items-center gap-3 rounded-2xl p-4 lg:order-first lg:col-span-12"><ShieldCheck size={26} aria-hidden /><span className="flex-1"><b className="block">{nudge.t}</b><span className="text-sm opacity-90">{nudge.d}</span></span><ChevronRight aria-hidden /></Link>}
 
         {data ? (
-          <div className="lg:order-1 lg:col-span-8"><BalanceCard ngn={fmt(bal("NGN")?.balance ?? 0)} usd={fmt(bal("USD")?.balance ?? 0, "USD")} held={fmt(bal("NGN")?.locked ?? 0)} /></div>
+          <div className="min-w-0 lg:order-1 lg:col-span-8"><BalanceCard ngn={fmt(bal("NGN")?.balance ?? 0)} usd={fmt(bal("USD")?.balance ?? 0, "USD")} held={fmt(bal("NGN")?.locked ?? 0)} /></div>
         ) : (
-          <section className="grad-brand shadow-glow relative overflow-hidden rounded-3xl p-6 lg:col-span-12 lg:p-10">
+          <section className="grad-brand shadow-glow relative min-w-0 overflow-hidden rounded-3xl p-6 lg:col-span-12 lg:p-10">
             <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/30 blur-2xl" />
             <div className="relative mb-5 flex items-center justify-between lg:hidden">
               <span className="flex items-center gap-2 text-lg font-bold"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" stroke="#11160a" strokeWidth="2" aria-hidden><path d="M16 2 30 16 16 30 2 16Z" /><path d="M16 9 23 16 16 23 9 16Z" /></svg>Givar</span>
@@ -110,7 +110,7 @@ export default async function Home() {
           </section>
         )}
 
-        <nav aria-label="Quick actions" className={`glass grid grid-cols-4 gap-y-5 rounded-3xl p-4 ${data ? "lg:order-5 lg:col-span-4 lg:content-start" : "lg:col-span-12 lg:grid-cols-8"}`}>
+        <nav aria-label="Quick actions" className={`glass grid min-w-0 grid-cols-4 gap-y-5 rounded-3xl p-4 ${data ? "lg:order-5 lg:col-span-4 lg:content-start" : "lg:col-span-12 lg:grid-cols-8"}`}>
           {actions.map((a) => (
             <Link key={a.label} href={data || ["/giveaways", "/contests"].includes(a.href) ? a.href : "/auth"} className="flex flex-col items-center gap-2 text-center text-xs font-medium">
               <span className={`${a.grad} grid h-12 w-12 place-items-center rounded-2xl shadow-lg`}><a.Icon size={22} aria-hidden /></span>{a.label}

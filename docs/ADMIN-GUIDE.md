@@ -1,6 +1,13 @@
 # Admin guide
 
-Make yourself an admin: sign up, then run `npm run make-admin -- you@email.com` against your database and sign in again. Admin lives at `/admin` and has its **own** layout. It does not show the website's navigation. Use "View website" in the sidebar to go back.
+## Becoming an admin (3 ways)
+1. **Easiest (Vercel):** add an environment variable `ADMIN_EMAILS` = your email (comma-separated for more), redeploy, then sign in with **Google** or with a **verified** email. You become admin automatically. Unverified emails never count, so nobody can claim your address by signing up first.
+2. **SQL (instant, in your database's SQL editor):** `UPDATE "User" SET role = 'ADMIN', "emailVerified" = true WHERE email = 'you@example.com';` then sign out and in.
+3. **Command line:** `DATABASE_URL="<your production url>" npm run make-admin -- you@email.com`, then sign out and in.
+
+Visiting `/admin` while signed out sends you to sign-in. Signed in without admin rights shows "Page not found" on purpose.
+
+Make yourself an admin as above Admin lives at `/admin` and has its **own** layout. It does not show the website's navigation. Use "View website" in the sidebar to go back.
 
 | Section | What it does |
 |---------|--------------|

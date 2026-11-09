@@ -10,8 +10,9 @@ export default function Auth() {
   const [mode, setMode] = useState<"up" | "in">("up");
   const [f, setF] = useState({ name: "", identifier: "", password: "" });
   const [code, setCode] = useState(""); const [need2fa, setNeed2fa] = useState(false);
-  const [err, setErr] = useState(""); const [busy, setBusy] = useState(false); const [ref, setRef] = useState("");
-  useEffect(() => { const p = new URLSearchParams(location.search); const c = p.get("ref"); if (c) { setRef(c.toUpperCase()); setMode("up"); } }, []);
+  const [err, setErr] = useState(""); const [busy, setBusy] = useState(false); const [ref, setRef] = useState(""); const [next, setNext] = useState("/");
+  useEffect(() => { const p = new URLSearchParams(location.search); const c = p.get("ref"); if (c) { setRef(c.toUpperCase()); setMode("up"); }
+    const n = p.get("next"); if (n && n.startsWith("/") && !n.startsWith("//")) { setNext(n); setMode("in"); } }, []); // next = e.g. /admin
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
 
   async function submit(e: React.FormEvent) {
@@ -28,7 +29,7 @@ export default function Auth() {
     const res = await signIn("credentials", { identifier: f.identifier, password: f.password, code: code || undefined, redirect: false });
     setBusy(false);
     if (res?.error) return setErr(need2fa ? "That code didn't work. Try the next one, or use a backup code." : "Wrong email, phone or password.");
-    r.push("/"); r.refresh();
+    r.push(next); r.refresh();
   }
   return (
     <main className="min-h-screen lg:grid lg:grid-cols-2">
@@ -60,7 +61,7 @@ export default function Auth() {
           <button disabled={busy} className="bg-lime-givar w-full rounded-full py-3 font-semibold disabled:opacity-60">{busy ? "Please wait…" : need2fa ? "Verify and sign in" : mode === "up" ? "Create account" : "Sign in"}</button>
           {need2fa ? <button type="button" onClick={() => { setNeed2fa(false); setCode(""); setErr(""); }} className="w-full text-sm text-[var(--mut)]">← Back</button> : (
             <>
-              <button type="button" onClick={() => signIn("google", { callbackUrl: "/" })} className="glass w-full rounded-full py-3 font-semibold">Continue with Google</button>
+              <button type="button" onClick={() => signIn("google", { callbackUrl: next })} className="glass w-full rounded-full py-3 font-semibold">Continue with Google</button>
               <button type="button" onClick={() => setMode(mode === "up" ? "in" : "up")} className="w-full text-sm text-[var(--mut)]">{mode === "up" ? "Have an account? Sign in" : "New here? Create an account"}</button>
             </>
           )}

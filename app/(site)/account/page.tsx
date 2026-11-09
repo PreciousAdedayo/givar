@@ -36,7 +36,7 @@ export default async function Account() {
   const next = !me.phoneVerified ? { href: "/verify-phone", t: "Verify your phone to claim giveaways" } : me.kyc === "VERIFIED" ? null : me.kyc === "PENDING" ? { href: "/kyc", t: "ID review in progress" } : { href: "/kyc", t: "Verify your ID to withdraw" };
   const kycText = me.kyc === "VERIFIED" ? "Verified" : me.kyc === "PENDING" ? "In review" : me.kyc === "REJECTED" ? "Rejected, try again" : "Not started";
   return (
-    <main className="page max-w-xl space-y-5 lg:grid lg:max-w-6xl lg:grid-cols-[380px_1fr] lg:items-start lg:gap-6 lg:space-y-0">
+    <main className="page flex max-w-xl flex-col gap-5 lg:grid lg:max-w-6xl lg:grid-cols-[380px_1fr] lg:items-start lg:gap-6">
       <h1 className="sr-only">Your profile</h1>
       <div className="space-y-5 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
       <section className="grad-brand shadow-glow relative overflow-hidden rounded-3xl p-6 text-center">

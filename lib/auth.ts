@@ -4,7 +4,7 @@ import Credentials from "next-auth/providers/credentials";
 import { prisma } from "./prisma";
 import { provisionUser } from "./virtual-accounts";
 import { checkCredentials, checkSecondFactor } from "./credentials";
-import { startSession } from "./sessions";
+import { promoteIfAdminEmail, startSession } from "./sessions";
 import { ensureReferralCode } from "./referral";
 
 export const authOptions: NextAuthOptions = {
@@ -24,18 +24,27 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       if (account?.provider !== "google" || !user.email) return true;
+      // Trust Google's explicit email_verified claim; never promote an unverified identity.
+      const googleProfile = profile as { email_verified?: boolean } | undefined;
+      if (googleProfile?.email_verified !== true) return false;
       const email = user.email.toLowerCase();
       let db = await prisma.user.findUnique({ where: { email } });
       if (db?.banned) return false;
-      if (!db) { db = await prisma.user.create({ data: { email, name: user.name, image: user.image, emailVerified: true } }); await provisionUser(db); await ensureReferralCode(db.id); }
+      if (!db) {
+        db = await prisma.user.create({ data: { email, name: user.name, image: user.image, emailVerified: true } });
+        await provisionUser(db);
+        await ensureReferralCode(db.id);
+      } else if (!db.emailVerified) {
+        db = await prisma.user.update({ where: { id: db.id }, data: { emailVerified: true } });
+      }
       user.id = db.id;
       return true;
     },
     async jwt({ token, user }) {
       try {
-        if (user?.id) { token.id = user.id; token.sid = await startSession(user.id); token.invalid = undefined; }
+        if (user?.id) { token.id = user.id; await promoteIfAdminEmail(user.id); token.sid = await startSession(user.id); token.invalid = undefined; }
         if (token.id && token.sid) {
           // Every request: is this device still allowed in? (revoked, banned, or "sign out everywhere")
           const s = await prisma.loginSession.findUnique({ where: { id: token.sid }, include: { user: { select: { banned: true, role: true, sessionsValidAfter: true } } } });
