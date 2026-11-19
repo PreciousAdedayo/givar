@@ -2,7 +2,7 @@
 import { useState } from "react";
 export default function ReferralShare({ code, link }: { code: string; link: string }) {
   const [done, setDone] = useState(false);
-  const msg = encodeURIComponent(`Join me on Givar: create and claim cash giveaways, with your own naira and dollar account numbers. ${link}`);
+  const msg = encodeURIComponent(`Join me on Givar: create and claim cash giveaways, with a naira account and a dollar wallet funded by supported stablecoins. ${link}`);
   async function copy() { try { await navigator.clipboard.writeText(link); setDone(true); setTimeout(() => setDone(false), 1500); } catch {} }
   return (
     <section className="glass space-y-3 rounded-2xl p-5" aria-label="Your referral link">

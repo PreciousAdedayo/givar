@@ -8,6 +8,7 @@ import { refundGiveaway } from "@/lib/refund";
 import { notify, notifyMany } from "@/lib/notify";
 import { settleWithdrawal } from "@/lib/payout";
 import { MANAGED_PAGES } from "@/lib/seo";
+import { esc } from "@/lib/notify-rules";
 
 // Every action re-checks the admin role on the server (hiding a button is not security) and writes an audit entry.
 async function admin() { const s = await getSession(); if (s?.user.role !== "ADMIN") throw new Error("Forbidden"); return s.user.id; }
@@ -79,8 +80,10 @@ export async function saveSeoSettings(fd: FormData) {
   const titleTemplate = String(fd.get("titleTemplate") ?? "").trim().slice(0, 120);
   if (!titleTemplate.includes("%s")) redirect("/admin/seo/settings?err=template");
   const lines = (k: string, ok: (l: string) => boolean) => String(fd.get(k) ?? "").split("\n").map((l) => l.trim()).filter(ok).slice(0, 30).join("\n") || null;
+  const imageUrl = (k: string) => { const v = clean(fd, k, 500); if (v && !(v.startsWith("/") && !v.startsWith("//")) && !v.startsWith("https://")) redirect("/admin/seo/settings?err=image"); return v; };
   const data = {
-    siteName: String(fd.get("siteName") ?? "Givar").trim().slice(0, 60) || "Givar", titleTemplate, defaultDescription: clean(fd, "defaultDescription", 320), ogImage: clean(fd, "ogImage", 500),
+    siteName: String(fd.get("siteName") ?? "Givar").trim().slice(0, 60) || "Givar", titleTemplate, defaultDescription: clean(fd, "defaultDescription", 320), ogImage: imageUrl("ogImage"),
+    logoLightUrl: imageUrl("logoLightUrl"), logoDarkUrl: imageUrl("logoDarkUrl"), faviconUrl: imageUrl("faviconUrl"),
     twitterHandle: clean(fd, "twitterHandle", 40), googleVerification: clean(fd, "googleVerification", 120), bingVerification: clean(fd, "bingVerification", 120),
     robotsExtra: lines("robotsExtra", (l) => l.startsWith("/")), sameAs: lines("sameAs", (l) => l.startsWith("https://")),
   };
@@ -90,12 +93,12 @@ export async function saveSeoSettings(fd: FormData) {
 }
 
 // ---------- Notifications: broadcast ----------
-/** Sends an in-app announcement to a group of users. Banned users are skipped. Not emailed, to avoid accidental mass email. */
+/** Sends an in-app announcement and optionally queues branded email. Banned users are skipped. */
 export async function sendBroadcast(fd: FormData) {
   const a = await admin();
   const title = clean(fd, "title", 80), body = clean(fd, "body", 300), href = clean(fd, "href", 200);
   if (!title || !body) redirect("/admin/notifications?err=fields");
-  if (href && !(href.startsWith("/") && !href.startsWith("//"))) redirect("/admin/notifications?err=href");
+  if (href && !(href.startsWith("/") && !href.startsWith("//") && !href.includes("\\"))) redirect("/admin/notifications?err=href");
   if (fd.get("confirm") !== "on") redirect("/admin/notifications?err=confirm");
   const audience = String(fd.get("audience") ?? "all");
   const where: Prisma.UserWhereInput = { banned: false };
@@ -103,12 +106,21 @@ export async function sendBroadcast(fd: FormData) {
   else if (audience === "kyc_unverified") where.kyc = { not: "VERIFIED" };
   else if (audience === "phone_unverified") where.phoneVerified = false;
   else if (audience === "one") where.email = String(fd.get("email") ?? "").trim().toLowerCase();
-  const users = await prisma.user.findMany({ where, select: { id: true }, take: 100000 });
+  const users = await prisma.user.findMany({ where, select: { id: true, email: true, notificationPref: { select: { emailNews: true } } }, take: 100000 });
   if (users.length === 0) redirect("/admin/notifications?err=none");
+  const sendAnnouncementEmail = fd.get("sendEmail") === "on";
   const b = await prisma.broadcast.create({ data: { adminId: a, title, body, href, audience, sent: 0 } });
   const sent = await notifyMany(users.map((u) => u.id), { type: "SYSTEM", title, body, href: href ?? undefined, broadcastId: b.id });
-  await prisma.broadcast.update({ where: { id: b.id }, data: { sent } });
-  await audit(a, `broadcast(${sent}): ${title}`.slice(0, 150), audience);
+  let emailQueued = 0;
+  if (sendAnnouncementEmail) {
+    const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+    const recipients = users.flatMap((u) => u.email && u.notificationPref?.emailNews ? [{ to: u.email, subject: title, html: `<h2>${esc(title)}</h2><p>${esc(body)}</p>${href ? `<p><a href="${esc(`${site}${href}`)}">Open in Givar</a></p>` : ""}`, broadcastId: b.id }] : []);
+    for (let i = 0; i < recipients.length; i += 500) {
+      const r = await prisma.emailJob.createMany({ data: recipients.slice(i, i + 500) }); emailQueued += r.count;
+    }
+  }
+  await prisma.broadcast.update({ where: { id: b.id }, data: { sent, emailQueued } });
+  await audit(a, `broadcast(${sent}, email ${emailQueued}): ${title}`.slice(0, 150), audience);
   redirect(`/admin/notifications/${b.id}?sent=${sent}`);
 }
 

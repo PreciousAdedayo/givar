@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   const id = crypto.randomUUID();
   try {
     const pay = await createCryptoPayment(id, coin, p.data.amount);
-    const d = await prisma.cryptoDeposit.create({ data: { id, userId, coin: coin.coin, network: coin.network, address: pay.address, providerId: pay.providerId, usd: Math.round(p.data.amount * 100) } });
+    const d = await prisma.cryptoDeposit.create({ data: { id, userId, coin: coin.coin, network: coin.network, address: pay.address, providerId: pay.providerId, usd: Math.round(p.data.amount * 100), payAmount: pay.payAmount == null ? null : String(pay.payAmount) } });
     return NextResponse.json({ id: d.id, address: d.address, coin: d.coin, network: d.network, usd: p.data.amount, payAmount: pay.payAmount, qr: await QRCode.toDataURL(d.address, { margin: 1, width: 200 }), dev: !process.env.NOWPAYMENTS_API_KEY });
   } catch (e) {
     console.error("crypto create", e);

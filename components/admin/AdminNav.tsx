@@ -1,11 +1,11 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Banknote, Gift, LifeBuoy, Megaphone, MessagesSquare, LayoutDashboard, Receipt, ScrollText, Search, ShieldCheck, Trophy, Users } from "lucide-react";
+import { Activity, Banknote, Gift, LifeBuoy, Megaphone, MessagesSquare, LayoutDashboard, Receipt, ScrollText, Search, ShieldCheck, Trophy, Users, Smartphone } from "lucide-react";
 
 const items = [
   ["/admin", "Overview", LayoutDashboard], ["/admin/analytics", "Analytics", Activity], ["/admin/users", "Users", Users], ["/admin/support", "Support inbox", LifeBuoy], ["/admin/communities", "Community chats", MessagesSquare], ["/admin/kyc", "KYC reviews", ShieldCheck],
-  ["/admin/giveaways", "Giveaways", Gift], ["/admin/contests", "Contests", Trophy], ["/admin/transactions", "Transactions", Receipt], ["/admin/withdrawals", "Withdrawals", Banknote], ["/admin/notifications", "Notifications", Megaphone], ["/admin/seo", "SEO tools", Search], ["/admin/logs", "Logs", ScrollText],
+  ["/admin/giveaways", "Giveaways", Gift], ["/admin/contests", "Contests", Trophy], ["/admin/transactions", "Transactions", Receipt], ["/admin/withdrawals", "Withdrawals", Banknote], ["/admin/notifications", "Notifications", Megaphone], ["/admin/app", "Android app", Smartphone], ["/admin/seo", "SEO tools", Search], ["/admin/logs", "Logs", ScrollText],
 ] as const;
 export default function AdminNav({ pendingKyc, support = 0, row }: { pendingKyc: number; support?: number; row?: boolean }) {
   const p = usePathname();

@@ -19,9 +19,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
     if (body.event !== "charge.completed" || d?.status !== "successful") return NextResponse.json({ ok: true });
+    if (String(d.currency ?? "").toUpperCase() !== "NGN") return NextResponse.json({ error: "Unsupported currency" }, { status: 400 });
+    if (!process.env.FLUTTERWAVE_SECRET || !d.id) throw new Error("Flutterwave verification is not configured or transaction ID is missing");
+    const verifyResponse = await fetch(`${process.env.FLUTTERWAVE_BASE ?? "https://api.flutterwave.com/v3"}/transactions/${encodeURIComponent(String(d.id))}/verify`, { headers: { Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET}` }, signal: AbortSignal.timeout(15000) });
+    const verified = await verifyResponse.json().catch(() => null);
+    const v = verified?.data;
+    const webhookAmount = Math.round(Number(d.amount) * 100);
+    if (!verifyResponse.ok || verified?.status !== "success" || v?.status !== "successful" || String(v?.currency ?? "").toUpperCase() !== "NGN" || Math.round(Number(v?.amount) * 100) !== webhookAmount || (d.tx_ref && v?.tx_ref !== d.tx_ref)) throw new Error("Flutterwave transaction verification failed or payload did not match");
     const va = await prisma.virtualAccount.findFirst({ where: { OR: [{ txRef: d.tx_ref ?? "" }, { accountNumber: d.account_number ?? "" }] } });
     if (!va) throw new Error(`No virtual account for ${d.tx_ref}`);
     const amount = Math.round(Number(d.amount) * 100);
+    if (!Number.isSafeInteger(amount) || amount <= 0 || !d.id) throw new Error("Invalid Flutterwave transaction amount or ID");
     await prisma.$transaction(async (tx) => {
       const w = await tx.wallet.upsert({
         where: { userId_currency: { userId: va.userId, currency: "NGN" } },

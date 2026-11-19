@@ -3,7 +3,7 @@ import { unstable_cache } from "next/cache";
 import { prisma } from "./prisma";
 
 export const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://givar.app";
-export const DEFAULT_DESCRIPTION = "Givar.app is the international giveaway app to create giveaway links & codes, claim cash instantly, and win dinner contests. Get your virtual account number today. Available in Nigeria, USA, UK & worldwide.";
+export const DEFAULT_DESCRIPTION = "Givar.app is the international giveaway app to create giveaway links & codes, claim cash instantly, and win dinner contests. Receive naira through your Givar account and fund your dollar wallet with supported USD-pegged stablecoins.";
 
 // Cached for an hour and cleared instantly when an admin saves (revalidateTag("seo")).
 export const getSeoSettings = unstable_cache(async () => prisma.seoSettings.findUnique({ where: { id: "global" } }), ["seo-settings"], { tags: ["seo"], revalidate: 3600 });
@@ -14,7 +14,7 @@ export const MANAGED_PAGES = [
   { path: "/", label: "Home", title: "Givar.app - Global Giveaway Platform | Create, Claim & Win", description: DEFAULT_DESCRIPTION, absolute: true },
   { path: "/giveaways", label: "Live giveaways", title: "Live Giveaways", description: "Browse live cash giveaways on Givar. Claim giveaways by link or code and get paid instantly.", absolute: false },
   { path: "/contests", label: "Prize contests", title: "Prize Contests", description: "Enter raffle contests on Givar and win dinners and prizes. Free and paid entries.", absolute: false },
-  { path: "/auth", label: "Sign in / Sign up", title: "Create your free account", description: "Create a free Givar account to get naira and dollar account numbers, create giveaways and claim cash instantly.", absolute: false },
+  { path: "/auth", label: "Sign in / Sign up", title: "Create your free account", description: "Create a free Givar account to receive naira, fund your dollar wallet with supported stablecoins, create giveaways and claim cash instantly.", absolute: false },
 ] as const;
 
 const regional = (path: string) => ({ "en-NG": path, "en-US": path, "en-GB": path, "x-default": path });

@@ -1,13 +1,14 @@
 @tailwind base; @tailwind components; @tailwind utilities;
 /* Palette comes from the Givar logo only: near-black + its yellow-green (#D8F24A). */
 :root {
-  --bg:#0a0a0a; --fg:#f5f6ef; --mut:#a3a69a; --line:rgba(255,255,255,.1); --card:rgba(255,255,255,.05);
-  --accent-text:#D8F24A; --on-grad:#11160a; --glow1:rgba(216,242,74,.14); --glow2:rgba(216,242,74,.05);
-  --grad-brand:linear-gradient(135deg,#EAFB7A 0%,#D8F24A 48%,#B6D626 100%);
-  --grad-dark:linear-gradient(135deg,#1c2210 0%,#0f130a 100%);
-  --grad-soft:linear-gradient(135deg,rgba(216,242,74,.22),rgba(216,242,74,.08));
+  --bg:#101321; --fg:#f7f6f0; --mut:#a8adbd; --line:rgba(255,255,255,.11); --card:rgba(255,255,255,.055);
+  --accent-text:#D9F45B; --on-grad:#171b26; --glow1:rgba(255,107,87,.13); --glow2:rgba(114,103,255,.12);
+  --grad-brand:linear-gradient(132deg,#F0FA91 0%,#D9F45B 52%,#B7E64C 100%);
+  --grad-dark:linear-gradient(132deg,#28243f 0%,#151a2d 58%,#202a3a 100%);
+  --grad-soft:linear-gradient(132deg,rgba(255,107,87,.20),rgba(114,103,255,.16),rgba(77,214,200,.12));
+  --accent-coral:#FF6B57; --accent-violet:#8E82FF; --accent-teal:#4DD6C8;
 }
-:root:not(.dark) { --bg:#f7f8f1; --fg:#10130a; --mut:#5d6150; --line:rgba(16,19,10,.1); --card:rgba(255,255,255,.9); --accent-text:#4d6200; --glow1:rgba(216,242,74,.5); --glow2:rgba(216,242,74,.18); }
+:root:not(.dark) { --bg:#f7f4ed; --fg:#171a27; --mut:#666b79; --line:rgba(23,26,39,.11); --card:rgba(255,255,255,.88); --accent-text:#536400; --glow1:rgba(255,107,87,.13); --glow2:rgba(142,130,255,.12); }
 body { color:var(--fg); min-height:100vh; background-attachment:fixed;
   background:radial-gradient(52rem 34rem at 0% -8%,var(--glow1),transparent 60%),radial-gradient(46rem 32rem at 100% 0%,var(--glow2),transparent 58%),var(--bg); }
 .glass { background:var(--card); border:1px solid var(--line); backdrop-filter:blur(14px); }
@@ -31,3 +32,17 @@ img, svg, video { max-width: 100%; }
 *, *::before, *::after { box-sizing: border-box; }
 .page > *, .page section, .page aside, .page nav, .page ul, .page li { min-width: 0; }
 .page img, .page video, .page canvas { max-width: 100%; height: auto; }
+
+/* Homepage phone layout: controlled rhythm, safe gutters and no squeezed hero actions. */
+@media (max-width: 639px) {
+  .home-page { padding: 1rem .875rem 1.25rem; }
+  .home-page > .home-content-grid { gap: 1rem; }
+  .home-page section, .home-page nav { min-width: 0; }
+  .home-page .home-hero-actions > a { flex: 1 1 145px; min-width: 0; justify-content: center; text-align: center; padding-left: .9rem; padding-right: .9rem; }
+  .home-page h1 { overflow-wrap: normal; hyphens: auto; }
+  .home-page .glass { min-width: 0; }
+}
+.brand-logo-light { display: none; }
+.brand-logo-dark { display: block; }
+:root:not(.dark) .brand-logo-light { display: block; }
+:root:not(.dark) .brand-logo-dark { display: none; }

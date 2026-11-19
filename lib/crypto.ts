@@ -7,8 +7,6 @@ export const COINS = [
   { id: "USDT-BEP20", coin: "USDT", network: "BEP20", label: "USDT on BNB Chain (BEP20)", note: "Low fees", pay: "usdtbsc", prefix: "0x", len: 42 },
   { id: "USDT-ERC20", coin: "USDT", network: "ERC20", label: "USDT on Ethereum (ERC20)", note: "Higher network fees", pay: "usdterc20", prefix: "0x", len: 42 },
   { id: "USDC-ERC20", coin: "USDC", network: "ERC20", label: "USDC on Ethereum (ERC20)", note: "Higher network fees", pay: "usdc", prefix: "0x", len: 42 },
-  { id: "BTC", coin: "BTC", network: "Bitcoin", label: "Bitcoin (BTC)", note: "Slower confirmations", pay: "btc", prefix: "bc1", len: 42 },
-  { id: "ETH", coin: "ETH", network: "Ethereum", label: "Ether (ETH)", note: "Higher network fees", pay: "eth", prefix: "0x", len: 42 },
 ] as const;
 export const CRYPTO_MIN_USD = 10, CRYPTO_MAX_USD = 5000;
 export const coinById = (id: string) => COINS.find((c) => c.id === id);
@@ -24,22 +22,28 @@ export async function createCryptoPayment(depositId: string, coin: (typeof COINS
   }
   const r = await fetch("https://api.nowpayments.io/v1/payment", { method: "POST", headers: { "x-api-key": process.env.NOWPAYMENTS_API_KEY!, "Content-Type": "application/json" }, body: JSON.stringify({ price_amount: usd, price_currency: "usd", pay_currency: coin.pay, order_id: depositId, order_description: "Givar USD deposit", ipn_callback_url: `${SITE}/api/webhooks/crypto` }), signal: AbortSignal.timeout(15000) });
   const j = await r.json();
-  if (!r.ok || !j.pay_address) throw new Error(j.message ?? "Crypto provider error");
-  return { providerId: String(j.payment_id), address: String(j.pay_address), payAmount: typeof j.pay_amount === "number" ? j.pay_amount : null };
+  const payAmount = Number(j.pay_amount);
+  if (!r.ok || !j.pay_address || !j.payment_id || !Number.isFinite(payAmount) || payAmount <= 0) throw new Error(j.message ?? "Crypto provider returned an incomplete payment quote");
+  return { providerId: String(j.payment_id), address: String(j.pay_address), payAmount };
 }
 const sortKeys = (v: unknown): unknown => Array.isArray(v) ? v.map(sortKeys) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v as object).sort().map((k) => [k, sortKeys((v as Record<string, unknown>)[k])])) : v;
 /** NOWPayments signs the JSON body (keys sorted) with HMAC-SHA512 and your IPN secret. */
 export function verifyIpn(body: unknown, sig: string | null) {
-  const secret = process.env.NOWPAYMENTS_IPN_SECRET; if (!secret || !sig) return false;
+  const secret = process.env.NOWPAYMENTS_IPN_SECRET;
+  if (!secret || !sig || !/^[a-f0-9]{128}$/i.test(sig)) return false;
   const expect = createHmac("sha512", secret).update(JSON.stringify(sortKeys(body))).digest("hex");
-  return sig.length === expect.length && timingSafeEqual(Buffer.from(sig), Buffer.from(expect));
+  const supplied = Buffer.from(sig, "hex"), expected = Buffer.from(expect, "hex");
+  return supplied.length === expected.length && timingSafeEqual(supplied, expected);
 }
 /** Credits the user's USD wallet once, when the payment is confirmed. Safe to call twice. */
 export async function creditCryptoDeposit(providerId: string) {
   return prisma.$transaction(async (tx) => {
     const d = await tx.cryptoDeposit.findUnique({ where: { providerId } });
     if (!d) return null;
-    const flip = await tx.cryptoDeposit.updateMany({ where: { id: d.id, status: { not: "CREDITED" } }, data: { status: "CREDITED", creditedAt: new Date() } });
+    // Only an active deposit can be credited. Failed/expired deposits are terminal.
+    if (!["WAITING", "CONFIRMING"].includes(d.status)) return null;
+    if (!["USDT", "USDC"].includes(d.coin)) return null;
+    const flip = await tx.cryptoDeposit.updateMany({ where: { id: d.id, status: { in: ["WAITING", "CONFIRMING"] }, creditedAt: null }, data: { status: "CREDITED", creditedAt: new Date() } });
     if (flip.count !== 1) return null;
     const w = await tx.wallet.upsert({ where: { userId_currency: { userId: d.userId, currency: "USD" } }, update: { balance: { increment: d.usd } }, create: { userId: d.userId, currency: "USD", balance: d.usd } });
     await tx.transaction.create({ data: { walletId: w.id, type: "DEPOSIT", status: "SUCCESS", amount: d.usd, reference: `crypto_${providerId}`, meta: { coin: d.coin, network: d.network, method: "crypto" } } });

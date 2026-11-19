@@ -6,7 +6,8 @@ import { notify } from "@/lib/notify";
 
 /** Runs on a schedule (vercel.json). Picks a winner with a cryptographically secure RNG. */
 export async function GET(req: Request) {
-  if (req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const secret = process.env.CRON_SECRET;
+  if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const due = await prisma.contest.findMany({ where: { endsAt: { lte: new Date() }, drawnAt: null, cancelledAt: null }, include: { entries: true } });
   for (const c of due) {
     const winnerId = c.entries.length ? c.entries[randomInt(c.entries.length)].userId : null;

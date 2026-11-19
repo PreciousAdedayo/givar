@@ -3,12 +3,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import CountryPicker from "@/components/CountryPicker";
 
 const input = "w-full rounded-xl border border-[var(--line)] bg-transparent px-4 py-3 outline-none focus:border-lime-givar";
 export default function Auth() {
   const r = useRouter();
   const [mode, setMode] = useState<"up" | "in">("up");
-  const [f, setF] = useState({ name: "", identifier: "", password: "" });
+  const [f, setF] = useState({ name: "", identifier: "", password: "", country: "NG" });
   const [code, setCode] = useState(""); const [need2fa, setNeed2fa] = useState(false);
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false); const [ref, setRef] = useState(""); const [next, setNext] = useState("/");
   useEffect(() => { const p = new URLSearchParams(location.search); const c = p.get("ref"); if (c) { setRef(c.toUpperCase()); setMode("up"); }
@@ -37,7 +38,7 @@ export default function Auth() {
         <div className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-white/40 blur-3xl" />
         <span className="relative flex items-center gap-2 text-2xl font-bold"><svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="#11160a" strokeWidth="2" aria-hidden><path d="M16 2 30 16 16 30 2 16Z" /><path d="M16 9 23 16 16 23 9 16Z" /></svg>Givar</span>
         <div className="relative"><p className="text-6xl font-bold leading-[1.02] tracking-tight">Give.<br />Claim.<br />Win.</p>
-          <ul className="mt-8 space-y-3 text-lg font-medium"><li>Your own naira and dollar account numbers</li><li>Giveaways by link or code, paid out instantly</li><li>Prize contests with automatic draws</li></ul></div>
+          <ul className="mt-8 space-y-3 text-lg font-medium"><li>Your Givar naira account and stablecoin-funded dollar wallet</li><li>Giveaways by link or code, paid out instantly</li><li>Prize contests with automatic draws</li></ul></div>
         <p className="relative text-sm font-medium">Money is held in escrow until it is claimed.</p>
       </section>
       <div className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-8 lg:max-w-lg lg:px-10">
@@ -51,7 +52,7 @@ export default function Auth() {
             </>
           ) : (
             <>
-              {mode === "up" && <input className={input} placeholder="Full name" value={f.name} onChange={set("name")} required />}
+              {mode === "up" && <><input className={input} placeholder="Full name" value={f.name} onChange={set("name")} required /><label className="block text-sm text-[var(--mut)]">Country<div className="mt-1 text-[var(--fg)]"><CountryPicker className={input} value={f.country} onChange={(country) => setF({ ...f, country })} /></div></label></>}
               <input className={input} placeholder="Email or phone number" value={f.identifier} onChange={set("identifier")} required autoComplete="username" />
               <input className={input} type="password" placeholder="Password (8+ characters)" value={f.password} onChange={set("password")} required minLength={8} autoComplete={mode === "up" ? "new-password" : "current-password"} />
               {mode === "in" && <Link href="/auth/forgot" className="block text-center text-sm text-[var(--mut)] underline">Forgot password?</Link>}

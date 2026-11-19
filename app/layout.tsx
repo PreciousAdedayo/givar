@@ -12,6 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = s?.defaultDescription || DEFAULT_DESCRIPTION;
   return {
     metadataBase: new URL(SITE),
+    icons: { icon: "/api/branding/favicon", shortcut: "/api/branding/favicon" },
     applicationName: name,
     title: { default: "Givar.app - Global Giveaway Platform", template: s?.titleTemplate?.includes("%s") ? s.titleTemplate : "%s | Givar.app - Global Giveaway Platform" },
     description,
@@ -20,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
     verification: { google: s?.googleVerification || undefined, other: s?.bingVerification ? { "msvalidate.01": s.bingVerification } : undefined },
   };
 }
-export const viewport: Viewport = { themeColor: [{ media: "(prefers-color-scheme: dark)", color: "#0a0a0a" }, { media: "(prefers-color-scheme: light)", color: "#f7f8f1" }], width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: [{ media: "(prefers-color-scheme: dark)", color: "#101321" }, { media: "(prefers-color-scheme: light)", color: "#f7f4ed" }], width: "device-width", initialScale: 1 };
 
 // Runs before paint so the saved light theme doesn't flash dark
 const themeScript = `try{if(localStorage.getItem('theme')==='light')document.documentElement.classList.remove('dark')}catch(e){}`;

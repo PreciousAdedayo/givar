@@ -3,6 +3,7 @@ import { DEFAULT_DESCRIPTION, ROBOTS_DISALLOW, SITE } from "@/lib/seo";
 import { Card, PageHead, btnCls, inputCls } from "@/components/admin/ui";
 import SeoTabs from "@/components/admin/SeoTabs";
 import { saveSeoSettings } from "../../actions";
+import BrandingUploads from "@/components/admin/BrandingUploads";
 
 export const metadata = { title: "SEO settings" };
 export const dynamic = "force-dynamic";
@@ -16,13 +17,19 @@ export default async function SeoSettingsPage({ searchParams }: { searchParams: 
       <PageHead title="Site SEO settings" desc="Applies to the whole website." />
       <SeoTabs active="/admin/seo/settings" />
       {searchParams.saved && <p role="status" className="grad-soft mb-4 rounded-xl p-3 text-sm">Saved. The change is live.</p>}
-      {searchParams.err && <p role="alert" className="mb-4 rounded-xl bg-red-500/15 p-3 text-sm text-red-500">The title template must contain %s where the page title goes.</p>}
+      {searchParams.err && <p role="alert" className="mb-4 rounded-xl bg-red-500/15 p-3 text-sm text-red-500">{searchParams.err === "image" ? "Image URLs must begin with https:// or a same-site / path." : "The title template must contain %s where the page title goes."}</p>}
+      <div className="mb-5"><BrandingUploads /></div>
       <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
         <form action={saveSeoSettings} className="glass space-y-4 rounded-2xl p-5">
           <F t="Site name"><input name="siteName" defaultValue={s?.siteName ?? "Givar"} className={inputCls} /></F>
           <F t="Title template" hint="%s is replaced by each page's title. Example result: “Live Giveaways | Givar.app - Global Giveaway Platform”"><input name="titleTemplate" defaultValue={s?.titleTemplate ?? "%s | Givar.app - Global Giveaway Platform"} className={inputCls} /></F>
           <F t="Default description" hint="Used by pages that don't have their own."><textarea name="defaultDescription" rows={3} maxLength={320} defaultValue={s?.defaultDescription ?? ""} placeholder={DEFAULT_DESCRIPTION} className={inputCls} /></F>
           <F t="Default social share image URL" hint="1200×630 picture shown when links are shared. Blank uses the generated Givar image."><input name="ogImage" defaultValue={s?.ogImage ?? ""} placeholder="https://…" className={inputCls} /></F>
+          <div className="rounded-2xl border border-[var(--line)] p-4 space-y-3"><div><h2 className="font-semibold">Website branding</h2><p className="mt-1 text-xs text-[var(--mut)]">Add publicly accessible image URLs. Use transparent PNG or WebP logos with a consistent canvas. JPG is also accepted. Uploading files directly requires configured Supabase Storage.</p></div>
+            <F t="Light-theme logo URL" hint="Shown on light backgrounds."><input name="logoLightUrl" type="url" defaultValue={s?.logoLightUrl ?? ""} placeholder="https://…/givar-logo-dark-text.png" className={inputCls} /></F>
+            <F t="Dark-theme logo URL" hint="Shown on dark backgrounds."><input name="logoDarkUrl" type="url" defaultValue={s?.logoDarkUrl ?? ""} placeholder="https://…/givar-logo-light-text.png" className={inputCls} /></F>
+            <F t="Favicon URL" hint="Square icon, ideally 512×512 PNG or SVG."><input name="faviconUrl" type="url" defaultValue={s?.faviconUrl ?? ""} placeholder="https://…/givar-icon.png" className={inputCls} /></F>
+          </div>
           <F t="Twitter / X handle"><input name="twitterHandle" defaultValue={s?.twitterHandle ?? ""} placeholder="@givarapp" className={inputCls} /></F>
           <div className="grid gap-4 sm:grid-cols-2">
             <F t="Google Search Console code" hint="The content value of Google's verification meta tag."><input name="googleVerification" defaultValue={s?.googleVerification ?? ""} className={inputCls} /></F>

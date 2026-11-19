@@ -1,0 +1,23 @@
+name: Givar email queue
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+concurrency:
+  group: givar-email-queue
+  cancel-in-progress: false
+jobs:
+  process-email-queue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Process pending Givar emails
+        env:
+          GIVAR_SITE_URL: ${{ secrets.GIVAR_SITE_URL }}
+          GIVAR_CRON_SECRET: ${{ secrets.GIVAR_CRON_SECRET }}
+        run: |
+          test -n "$GIVAR_SITE_URL"
+          test -n "$GIVAR_CRON_SECRET"
+          curl --fail --silent --show-error --max-time 240 \
+            -H "Authorization: Bearer $GIVAR_CRON_SECRET" \
+            "$GIVAR_SITE_URL/api/cron/send-emails"

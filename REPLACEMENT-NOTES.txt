@@ -1,0 +1,38 @@
+GIVAR V8 COMPLETE REPLACEMENT — DEPLOY NOTES
+
+This folder is a source-only replacement for the existing Givar v8 project. It intentionally excludes .env, .git, node_modules and .next. Preserve those local items when replacing the existing project folder.
+
+DATABASE
+- The Prisma schema adds: SeoSettings.logoLightUrl, SeoSettings.logoDarkUrl, SeoSettings.faviconUrl, CryptoDeposit.payAmount, Broadcast.emailQueued, Broadcast.emailSent, AppRelease and EmailJob.
+- Back up the existing Supabase database first.
+- Run `npx prisma db push` against the EXISTING database, then `npx prisma generate`.
+- Never run `prisma migrate reset` or create a new database for this update.
+
+SUPABASE STORAGE
+- Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to local .env and Vercel Production environment variables.
+- Create a PUBLIC Storage bucket named `givar-public`.
+- Set its file-size limit to at least 150 MB.
+- Allow image/jpeg, image/png, image/webp, and application/vnd.android.package-archive.
+- Configure Storage CORS for the Givar production domain.
+- The service-role key is server-only. Never use a NEXT_PUBLIC_ prefix and never commit it.
+
+EMAIL QUEUE
+- Keep RESEND_API_KEY and EMAIL_FROM configured in Vercel.
+- Set CRON_SECRET in Vercel.
+- Add GitHub Actions repository secrets GIVAR_SITE_URL (production URL without trailing slash) and GIVAR_CRON_SECRET (same value as Vercel CRON_SECRET).
+- The included GitHub Actions workflow calls /api/cron/send-emails every five minutes. Enable GitHub Actions for the repository.
+
+APK RELEASES
+- Uploads are sent directly from the browser to Supabase Storage using a short-lived signed upload URL.
+- APKs are stored in the public givar-public bucket; release metadata is stored in Postgres.
+- Every update must retain the existing Android application ID and signing certificate. This project does not currently inspect/verify the APK signing certificate or package ID automatically; confirm these before publishing a release.
+
+PAYMENTS
+- USD deposits are restricted to supported USDT/USDC networks through NOWPayments.
+- USD virtual-account provisioning and the legacy Strowallet USD webhook are disabled.
+- Paystack and Flutterwave handle NGN flows. The source does not contain an active Stripe checkout/webhook integration.
+- Test provider sandbox/live webhooks and reconcile wallet ledgers before accepting real funds.
+
+TESTING
+- Run `npx prisma generate`, `npm run build`, and `npm test` on the Windows development machine before pushing.
+- Do not deploy if Prisma generation, build, or tests fail.

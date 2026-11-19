@@ -3,6 +3,7 @@ import { createHmac } from "crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getUserId } from "@/lib/session";
+import { COUNTRIES } from "@/lib/countries";
 import { limit } from "@/lib/ratelimit";
 import { notify } from "@/lib/notify";
 import { upgradeNgnAccount } from "@/lib/virtual-accounts";
@@ -10,7 +11,7 @@ import { upgradeNgnAccount } from "@/lib/virtual-accounts";
 const MAX_BYTES = 1_800_000; // two files must fit under typical 4.5 MB request limits
 const MIME = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const Meta = z.object({
-  kind: z.enum(["BVN", "NIN", "PASSPORT", "NATIONAL_ID", "DRIVERS_LICENSE"]), country: z.enum(["NG", "US", "GB", "OTHER"]),
+  kind: z.enum(["BVN", "NIN", "PASSPORT", "NATIONAL_ID", "DRIVERS_LICENSE"]), country: z.string().length(2).refine((code) => COUNTRIES.some((c) => c.code === code), "Choose a valid country."),
   legalName: z.string().trim().min(3).max(80), dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), address: z.string().trim().min(8).max(200), idNumber: z.string().trim().min(5).max(24),
 });
 const bad = (error: string, status = 400) => NextResponse.json({ error }, { status });

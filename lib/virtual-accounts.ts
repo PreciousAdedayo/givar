@@ -21,24 +21,18 @@ async function flutterwaveNgn(u: User, txRef: string, bvn?: string): Promise<Acc
   return { accountNumber: j.data.account_number, bankName: j.data.bank_name, accountName: name, provider: "flutterwave" };
 }
 
-/** USD account via Strowallet / Maplerad. TODO: confirm the exact endpoint + payload in your provider docs. */
-async function usdAccount(u: User): Promise<Acct & { provider: string }> {
-  const name = `Givar - ${u.name ?? "User"}`;
-  if (!process.env.STROWALLET_KEY) return { ...mock("40", "Givar USD (test)", name), provider: "mock" };
-  throw new Error("Strowallet USD provisioning: implement per provider docs");
-}
-
 /** Creates wallets + virtual accounts. Safe to call again: it only fills what's missing.
  *  Provider failures never block signup; accounts can be retried from the dashboard. */
 export async function provisionUser(u: User, bvn?: string) {
   for (const currency of ["NGN", "USD"] as const)
     await prisma.wallet.upsert({ where: { userId_currency: { userId: u.id, currency } }, update: {}, create: { userId: u.id, currency } });
   const have = await prisma.virtualAccount.findMany({ where: { userId: u.id } });
-  for (const currency of ["NGN", "USD"] as const) {
-    if (have.some((a) => a.currency === currency)) continue;
+  // Only NGN receives a virtual bank account. USD deposits are stablecoin-only.
+  const currency = "NGN" as const;
+  if (!have.some((a) => a.currency === currency)) {
     try {
       const txRef = `givar_${currency}_${u.id}`;
-      const a = currency === "NGN" ? await flutterwaveNgn(u, txRef, bvn) : await usdAccount(u);
+      const a = await flutterwaveNgn(u, txRef, bvn);
       await prisma.virtualAccount.create({ data: { userId: u.id, currency, txRef, provider: a.provider, accountNumber: a.accountNumber, bankName: a.bankName, accountName: a.accountName } });
     } catch (e) {
       await prisma.analyticsEvent.create({ data: { type: "provision_failed", meta: { userId: u.id, currency, error: String(e) } } });

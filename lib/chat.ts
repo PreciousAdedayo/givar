@@ -27,10 +27,10 @@ export async function roomAccess(key: string, userId: string, role: string): Pro
   if (t.userId === userId) return { key, ...r, title: "Givar support", ownerId: t.userId, role: "owner" };
   return admin ? { key, ...r, title: t.subject ?? "Support chat", ownerId: t.userId, role: "staff" } : null;
 }
-export type Msg = { id: string; userId: string; name: string; fromStaff: boolean; hidden: boolean; body: string; at: string };
+export type Msg = { id: string; userId: string; name: string; image: string | null; fromStaff: boolean; hidden: boolean; body: string; at: string };
 export async function listMessages(key: string, take = 60): Promise<Msg[]> {
-  const rows = await prisma.chatMessage.findMany({ where: { roomKey: key }, orderBy: { createdAt: "desc" }, take, include: { user: { select: { name: true } } } });
-  return rows.reverse().map((m) => ({ id: m.id, userId: m.userId, name: m.fromStaff ? "Givar Team" : shortName(m.user.name), fromStaff: m.fromStaff, hidden: m.hidden, body: m.hidden ? "" : m.body, at: m.createdAt.toISOString() }));
+  const rows = await prisma.chatMessage.findMany({ where: { roomKey: key }, orderBy: { createdAt: "desc" }, take, include: { user: { select: { name: true, image: true } } } });
+  return rows.reverse().map((m) => ({ id: m.id, userId: m.userId, name: m.fromStaff ? "Givar Team" : shortName(m.user.name), image: m.fromStaff ? null : m.user.image, fromStaff: m.fromStaff, hidden: m.hidden, body: m.hidden ? "" : m.body, at: m.createdAt.toISOString() }));
 }
 export const shortName = (n?: string | null) => { const [a, b] = (n ?? "").trim().split(/\s+/); return a ? (b ? `${a} ${b[0]}.` : a) : "Member"; };
 export const markRead = (userId: string, key: string) => prisma.chatRead.upsert({ where: { userId_roomKey: { userId, roomKey: key } }, update: { lastReadAt: new Date() }, create: { userId, roomKey: key } });

@@ -28,7 +28,7 @@ export default async function Account() {
   const userId = await getUserId(); if (!userId) redirect("/auth");
   const [me, accounts, made, won, entered] = await Promise.all([
     prisma.user.findUniqueOrThrow({ where: { id: userId } }),
-    prisma.virtualAccount.findMany({ where: { userId } }),
+    prisma.virtualAccount.findMany({ where: { userId, currency: "NGN" } }),
     prisma.giveaway.count({ where: { creatorId: userId } }), prisma.claim.count({ where: { userId } }), prisma.contestEntry.count({ where: { userId } }),
   ]);
   const unread = await prisma.notification.count({ where: { userId, readAt: null } });

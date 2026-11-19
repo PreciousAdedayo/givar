@@ -2,6 +2,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import CountryPicker from "@/components/CountryPicker";
 
 const input = "w-full rounded-xl border border-[var(--line)] bg-transparent px-4 py-3 outline-none focus:border-lime-givar";
 const MAX = 1_800_000;
@@ -39,7 +40,7 @@ export default function KycWizard({ defaultName }: { defaultName: string }) {
       <ol className="flex items-center gap-2" aria-label="Steps">{NAMES.map((n, i) => <li key={n} className="flex flex-1 items-center gap-2"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold ${i < step ? "grad-brand" : i === step ? "grad-soft" : "bg-[var(--line)] text-[var(--mut)]"}`} aria-current={i === step ? "step" : undefined}>{i < step ? "✓" : i + 1}</span><span className={`hidden text-xs sm:block ${i === step ? "font-semibold" : "text-[var(--mut)]"}`}>{n}</span><span className="h-px flex-1 bg-[var(--line)]" /></li>)}</ol>
       <h2 className="text-lg font-semibold">{NAMES[step]}</h2>
       {step === 0 && <div className="space-y-4">
-        <L t="Country"><select className={input} value={f.country} onChange={(e) => { const c = e.target.value; setF({ ...f, country: c, kind: c === "NG" ? "BVN" : "PASSPORT" }); }}><option value="NG">Nigeria</option><option value="US">United States</option><option value="GB">United Kingdom</option><option value="OTHER">Other</option></select></L>
+        <L t="Country"><CountryPicker className={input} value={f.country} onChange={(c) => setF({ ...f, country: c, kind: c === "NG" ? "BVN" : "PASSPORT" })} /></L>
         <L t="ID type"><select className={input} value={f.kind} onChange={set("kind")}>{KINDS.filter((k) => !k[2] || f.country === "NG").map((k) => <option key={k[0]} value={k[0]}>{k[1]}</option>)}</select></L>
         <L t="ID number" hint={ng ? "11 digits. Dial *565*0# to get your BVN." : undefined}><input className={input} inputMode={ng ? "numeric" : "text"} maxLength={ng ? 11 : 24} value={f.idNumber} onChange={set("idNumber")} autoComplete="off" /></L></div>}
       {step === 1 && <div className="space-y-4">

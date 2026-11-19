@@ -3,7 +3,8 @@ generator client {
 }
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // All money is stored in MINOR units (kobo / cents) as Int to avoid float errors.
@@ -251,6 +252,9 @@ model SeoSettings {
   titleTemplate       String   @default("%s | Givar.app - Global Giveaway Platform")
   defaultDescription  String?
   ogImage             String?
+  logoLightUrl        String?
+  logoDarkUrl         String?
+  faviconUrl          String?
   twitterHandle       String?
   googleVerification  String?
   bingVerification    String?
@@ -332,6 +336,8 @@ model Broadcast {
   href      String?
   audience  String
   sent      Int
+  emailQueued Int @default(0)
+  emailSent Int @default(0)
   createdAt DateTime @default(now())
 }
 
@@ -393,6 +399,7 @@ model CryptoDeposit {
   address    String
   providerId String    @unique
   usd        Int // expected amount in cents
+  payAmount  String? // exact quoted token amount returned by NOWPayments
   status     String    @default("WAITING") // WAITING | CONFIRMING | CREDITED | EXPIRED | FAILED
   createdAt  DateTime  @default(now())
   creditedAt DateTime?
@@ -423,4 +430,38 @@ model PersonalCode {
   giveaway     Giveaway  @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
 
   @@index([giveawayId])
+}
+
+// Published Android app builds. APK binaries live in Supabase Storage, never in Postgres.
+model AppRelease {
+  id                String   @id @default(cuid())
+  version           String   @unique
+  releaseNotes      String?
+  fileUrl           String
+  fileName          String
+  fileSize          Int
+  minAndroidVersion String?
+  published         Boolean  @default(false)
+  uploadedById      String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  @@index([published, createdAt])
+}
+
+
+// Outbound transactional and announcement email queue. Jobs are claimed atomically by the cron worker.
+model EmailJob {
+  id           String   @id @default(cuid())
+  to           String
+  subject      String
+  html         String
+  broadcastId  String?
+  status       String   @default("PENDING") // PENDING | PROCESSING | SENT | FAILED
+  attempts     Int      @default(0)
+  processingAt DateTime?
+  sentAt       DateTime?
+  lastError    String?
+  createdAt    DateTime @default(now())
+  @@index([status, createdAt])
+  @@index([broadcastId])
 }

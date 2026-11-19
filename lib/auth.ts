@@ -47,10 +47,11 @@ export const authOptions: NextAuthOptions = {
         if (user?.id) { token.id = user.id; await promoteIfAdminEmail(user.id); token.sid = await startSession(user.id); token.invalid = undefined; }
         if (token.id && token.sid) {
           // Every request: is this device still allowed in? (revoked, banned, or "sign out everywhere")
-          const s = await prisma.loginSession.findUnique({ where: { id: token.sid }, include: { user: { select: { banned: true, role: true, sessionsValidAfter: true } } } });
+          const s = await prisma.loginSession.findUnique({ where: { id: token.sid }, include: { user: { select: { banned: true, role: true, image: true, sessionsValidAfter: true } } } });
           const iat = typeof token.iat === "number" ? token.iat * 1000 : 0;
           if (!s || s.revokedAt || s.user.banned || (s.user.sessionsValidAfter && iat < s.user.sessionsValidAfter.getTime())) return { invalid: true };
           token.role = s.user.role;
+          token.image = s.user.image;
           if (Date.now() - s.lastSeenAt.getTime() > 300000) await prisma.loginSession.update({ where: { id: s.id }, data: { lastSeenAt: new Date() } });
         } else if (token.id && !token.role) {
           token.role = (await prisma.user.findUnique({ where: { id: token.id }, select: { role: true } }))?.role ?? "USER"; // sessions from before this feature existed
@@ -59,7 +60,7 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (session.user) { session.user.id = (token.id as string) ?? ""; session.user.role = (token.role as string) ?? "USER"; session.user.sid = token.sid; }
+      if (session.user) { session.user.id = (token.id as string) ?? ""; session.user.role = (token.role as string) ?? "USER"; session.user.sid = token.sid; session.user.image = (token.image as string | null | undefined) ?? null; }
       return session;
     },
   },

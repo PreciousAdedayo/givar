@@ -17,11 +17,12 @@ import BellSlot from "@/components/BellSlot";
 import ChatSlot from "@/components/ChatSlot";
 import TxRow from "@/components/TxRow";
 import TxTable from "@/components/TxTable";
+import BrandLogo from "@/components/BrandLogo";
 
 const faqs = [
   ["What is a giveaway link generator?", "Givar turns any amount of cash into a claim link and code you can share anywhere. Winners open the link and the money lands in their wallet."],
   ["How do I claim a giveaway by code?", "Sign in, enter the code (for example GV-8X2K91), and your wallet is credited instantly if prizes remain."],
-  ["Is Givar an international giveaway platform?", "Yes. You get virtual account numbers to receive money from banks in Nigeria, the US, the UK and beyond."],
+  ["How do I fund my dollar wallet?", "You can add USD value using supported USD-pegged stablecoins on the listed networks. Your wallet is credited after payment confirmation."],
   ["Is the giveaway money safe?", "Funds are locked in escrow when a giveaway is created and released only as winners claim."],
 ];
 const buildJsonLd = (sameAs: string[]) => ({ "@context": "https://schema.org", "@graph": [
@@ -47,7 +48,7 @@ async function loadMe(uid: string) {
   const [me, wallets, accounts, txs, flow, made, won] = await Promise.all([
     prisma.user.findUniqueOrThrow({ where: { id: uid } }),
     prisma.wallet.findMany({ where: { userId: uid } }),
-    prisma.virtualAccount.findMany({ where: { userId: uid }, orderBy: { currency: "asc" } }),
+    prisma.virtualAccount.findMany({ where: { userId: uid, currency: "NGN" }, orderBy: { currency: "asc" } }),
     prisma.transaction.findMany({ where: { wallet: { userId: uid } }, orderBy: { createdAt: "desc" }, take: 6, include: { wallet: { select: { currency: true } } } }),
     prisma.transaction.findMany({ where: { wallet: { userId: uid, currency: "NGN" }, status: "SUCCESS", createdAt: { gte: since } }, select: { createdAt: true, amount: true, type: true } }),
     prisma.giveaway.count({ where: { creatorId: uid } }),
@@ -82,7 +83,7 @@ export default async function Home() {
     <li key={c.id}><Link href={`/contests/${c.id}`} className="grad-dark flex items-center gap-3 rounded-2xl p-4"><Trophy size={26} aria-hidden /><span className="flex-1"><b className="block">{c.prize}</b><span className="text-sm opacity-90">{c.entryFee ? `Entry ${fmt(c.entryFee, c.currency)}` : "Free entry"} · {c._count.entries}/{c.maxEntries} joined</span></span><ChevronRight aria-hidden /></Link></li>));
 
   return (
-    <main className="page mx-auto min-w-0 max-w-6xl">
+    <main className="page home-page mx-auto min-w-0 max-w-6xl">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {data && (
         <div className="mb-4 flex items-center justify-between lg:hidden">
@@ -92,7 +93,7 @@ export default async function Home() {
       )}
       {data && <div className="lg:mb-5"><h1 className="sr-only text-3xl font-bold lg:not-sr-only lg:block">Welcome back, {first}</h1><p className="hidden text-[var(--mut)] lg:block">Here's what's happening with your money and giveaways.</p></div>}
 
-      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-12">
+      <div className="home-content-grid grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-12">
         {nudge && <Link href={nudge.href} className="grad-dark flex items-center gap-3 rounded-2xl p-4 lg:order-first lg:col-span-12"><ShieldCheck size={26} aria-hidden /><span className="flex-1"><b className="block">{nudge.t}</b><span className="text-sm opacity-90">{nudge.d}</span></span><ChevronRight aria-hidden /></Link>}
 
         {data ? (
@@ -101,12 +102,12 @@ export default async function Home() {
           <section className="grad-brand shadow-glow relative min-w-0 overflow-hidden rounded-3xl p-6 lg:col-span-12 lg:p-10">
             <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/30 blur-2xl" />
             <div className="relative mb-5 flex items-center justify-between lg:hidden">
-              <span className="flex items-center gap-2 text-lg font-bold"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" stroke="#11160a" strokeWidth="2" aria-hidden><path d="M16 2 30 16 16 30 2 16Z" /><path d="M16 9 23 16 16 23 9 16Z" /></svg>Givar</span>
+              <span className="flex items-center gap-2 text-lg font-bold"><BrandLogo size="small" /></span>
               <span className="flex items-center gap-3"><Link href="/auth" className="text-sm font-semibold underline">Sign in</Link><ThemeToggle /></span>
             </div>
             <h1 className="relative text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:max-w-3xl lg:text-5xl">The Global Giveaway Platform - Create, Share &amp; Claim Cash in Seconds</h1>
-            <p className="relative mt-3 max-w-[52ch] text-sm font-medium lg:text-base">Give. Claim. Win. Get your own naira and dollar account numbers and receive money from any bank worldwide.</p>
-            <div className="relative mt-5 flex gap-3"><Link href="/auth" className="rounded-full bg-[#0a0a0a] px-6 py-3 text-sm font-semibold text-[#D8F24A]">Create free account</Link><Link href="/giveaways" className="rounded-full bg-white/50 px-6 py-3 text-sm font-semibold">Browse giveaways</Link></div>
+            <p className="relative mt-3 max-w-[52ch] text-sm font-medium lg:text-base">Give. Claim. Win. Receive naira through your Givar bank account and fund your dollar wallet with supported stablecoins.</p>
+            <div className="home-hero-actions relative mt-5 flex flex-wrap gap-3"><Link href="/auth" className="rounded-full bg-[#0a0a0a] px-6 py-3 text-sm font-semibold text-[#D8F24A]">Create free account</Link><Link href="/giveaways" className="rounded-full bg-white/50 px-6 py-3 text-sm font-semibold">Browse giveaways</Link></div>
           </section>
         )}
 
@@ -170,10 +171,10 @@ export default async function Home() {
               {[["Giveaway link generator", "Turn any amount of cash into a claim link and a code like GV-8X2K91. Share it on WhatsApp, X or Telegram in one tap."], ["Claim a giveaway by code", "Winners enter the code or open the link and the money lands in their Givar wallet the moment they claim."], ["Money held in escrow", "The full amount is locked when you create a giveaway. Whatever nobody claims comes back to you when it expires."], ["Prize contests", "Enter raffle contests for dinners and other prizes, free or with a small entry fee. Winners are drawn automatically."]].map(([t, d]) => <div key={t}><dt className="font-semibold">{t}</dt><dd className="mt-1 text-[var(--mut)]">{d}</dd></div>)}
             </dl></section>
           <section className="mt-10" aria-labelledby="global"><h2 id="global" className="text-2xl font-bold">An international giveaway platform: Nigeria, the USA, the UK and worldwide</h2>
-            <p className="mt-3 max-w-[70ch] text-[var(--mut)]">Every Givar user gets a naira account number and a dollar account number. Receive money from any bank in Nigeria, the United States, the United Kingdom or anywhere else, and withdraw to a Nigerian bank account whenever you like. <Link href="/auth" className="text-lime-givar underline">Create your free account</Link> or <Link href="/giveaways" className="text-lime-givar underline">browse live giveaways</Link>.</p></section>
+            <p className="mt-3 max-w-[70ch] text-[var(--mut)]">Receive naira through your Givar account number. Fund your dollar wallet with supported USD-pegged stablecoins after the network confirms your payment. <Link href="/auth" className="text-lime-givar underline">Create your free account</Link> or <Link href="/giveaways" className="text-lime-givar underline">browse live giveaways</Link>.</p></section>
           <section className="mt-10 max-w-3xl" aria-labelledby="faq"><h2 id="faq" className="text-2xl font-bold">Questions</h2>
             <div className="mt-3 divide-y divide-[var(--line)]">{faqs.map(([q, a]) => <details key={q} className="py-4"><summary className="cursor-pointer font-semibold">{q}</summary><p className="mt-2 text-[var(--mut)]">{a}</p></details>)}</div></section>
-          <footer className="mt-10 border-t border-[var(--line)] pt-6 text-center text-sm text-[var(--mut)]"><nav aria-label="Footer" className="mb-3 flex flex-wrap justify-center gap-x-5 gap-y-2"><Link href="/giveaways" className="hover:text-[var(--fg)]">Live giveaways</Link><Link href="/contests" className="hover:text-[var(--fg)]">Prize contests</Link><Link href="/auth" className="hover:text-[var(--fg)]">Create account</Link><a href="#faq" className="hover:text-[var(--fg)]">FAQ</a><a href="mailto:support@givar.app" className="hover:text-[var(--fg)]">Support</a></nav>© {new Date().getFullYear()} Givar.app · Give. Claim. Win.</footer>
+          <footer className="mt-10 border-t border-[var(--line)] pt-6 text-center text-sm text-[var(--mut)]"><nav aria-label="Footer" className="mb-3 flex flex-wrap justify-center gap-x-5 gap-y-2"><Link href="/giveaways" className="hover:text-[var(--fg)]">Live giveaways</Link><Link href="/contests" className="hover:text-[var(--fg)]">Prize contests</Link><Link href="/auth" className="hover:text-[var(--fg)]">Create account</Link><Link href="/download" className="hover:text-[var(--fg)]">Download app</Link><a href="#faq" className="hover:text-[var(--fg)]">FAQ</a><a href="mailto:support@givar.app" className="hover:text-[var(--fg)]">Support</a></nav>© {new Date().getFullYear()} Givar.app · Give. Claim. Win.</footer>
         </>
       )}
     </main>

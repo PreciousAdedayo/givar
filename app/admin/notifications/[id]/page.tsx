@@ -13,11 +13,12 @@ export default async function BroadcastResults({ params, searchParams }: { param
   const tab = ["opened", "seen", "unseen"].includes(searchParams.tab ?? "") ? searchParams.tab! : "opened", page = pageNum(searchParams.page);
   const base = { broadcastId: b.id };
   const where = tab === "opened" ? { ...base, openedAt: { not: null } } : tab === "seen" ? { ...base, readAt: { not: null }, openedAt: null } : { ...base, readAt: null };
-  const [seen, opened, rows, total, opens] = await Promise.all([
+  const [seen, opened, rows, total, opens, emailFailed] = await Promise.all([
     prisma.notification.count({ where: { ...base, readAt: { not: null } } }), prisma.notification.count({ where: { ...base, openedAt: { not: null } } }),
     prisma.notification.findMany({ where, orderBy: tab === "unseen" ? { createdAt: "desc" } : { openedAt: "desc" }, skip: (page - 1) * SIZE, take: SIZE, include: { user: { select: { id: true, name: true, email: true } } } }),
     prisma.notification.count({ where }),
     prisma.notification.findMany({ where: { ...base, openedAt: { not: null } }, select: { openedAt: true }, take: 50000 }),
+    prisma.emailJob.count({ where: { broadcastId: b.id, status: "FAILED" } }),
   ]);
   // opens per hour for the first 24 hours after sending
   const hours = Array.from({ length: 24 }, () => 0);
@@ -30,6 +31,7 @@ export default async function BroadcastResults({ params, searchParams }: { param
       <PageHead title={b.title} desc={`Sent ${dt(b.createdAt)} to ${b.sent.toLocaleString()} users (${b.audience.replaceAll("_", " ")})`} />
       {searchParams.sent && <p role="status" className="grad-soft mb-4 rounded-xl p-3 text-sm">Sent to {Number(searchParams.sent).toLocaleString()} user(s). Results will fill in as people open their notifications.</p>}
       <p className="glass mb-4 rounded-2xl p-4 text-sm">{b.body}{b.href && <span className="text-[var(--mut)]"> → {b.href}</span>}</p>
+      {b.emailQueued > 0 && <p className="mb-4 text-sm text-[var(--mut)]">Email queued: {b.emailQueued.toLocaleString()} · Sent: {b.emailSent.toLocaleString()} · Failed: {emailFailed.toLocaleString()} · Pending: {Math.max(0, b.emailQueued - b.emailSent - emailFailed).toLocaleString()}</p>}
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[["Sent", b.sent.toLocaleString(), ""], ["Seen", seen.toLocaleString(), pct(seen)], ["Opened", opened.toLocaleString(), pct(opened)], ["Not seen yet", Math.max(0, b.sent - seen).toLocaleString(), pct(Math.max(0, b.sent - seen))]].map(([l, v, p]) => <div key={l} className="glass rounded-2xl p-4"><p className="text-sm text-[var(--mut)]">{l}</p><p className="mt-1 text-2xl font-bold">{v}</p>{p && <p className="text-xs text-[var(--mut)]">{p} of those sent</p>}</div>)}
       </div>

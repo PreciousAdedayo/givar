@@ -3,10 +3,12 @@ import { fmt } from "./money";
 import { notify } from "./notify";
 import { afterDeposit } from "./referral";
 /** Marks a pending deposit successful and credits the wallet. Idempotent via the PENDING->SUCCESS guard. */
-export async function settleDeposit(reference: string) {
+export async function settleDeposit(reference: string, expected?: { amount: number; currency: string }) {
   const done = await prisma.$transaction(async (tx) => {
     const t = await tx.transaction.findUnique({ where: { reference } });
     if (!t) return null;
+    if (expected && (t.amount !== expected.amount || expected.currency !== "NGN")) return null;
+    if (t.type !== "DEPOSIT" || t.amount <= 0) return null;
     const flip = await tx.transaction.updateMany({ where: { id: t.id, status: "PENDING" }, data: { status: "SUCCESS" } });
     if (flip.count !== 1) return null;
     const w = await tx.wallet.update({ where: { id: t.walletId }, data: { balance: { increment: t.amount } } });

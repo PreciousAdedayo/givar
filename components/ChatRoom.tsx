@@ -1,8 +1,9 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Send } from "lucide-react";
+import Avatar from "@/components/Avatar";
 
-type Msg = { id: string; userId: string; name: string; fromStaff: boolean; hidden: boolean; body: string; at: string };
+type Msg = { id: string; userId: string; name: string; image: string | null; fromStaff: boolean; hidden: boolean; body: string; at: string };
 const time = (iso: string) => { const d = new Date(iso), t = new Date(); return d.toDateString() === t.toDateString() ? d.toLocaleTimeString("en", { hour: "numeric", minute: "2-digit" }) : d.toLocaleDateString("en", { month: "short", day: "numeric" }) + ", " + d.toLocaleTimeString("en", { hour: "numeric", minute: "2-digit" }); };
 
 /** Chat window. Checks for new messages every 4 seconds while the tab is visible. */
@@ -26,7 +27,8 @@ export default function ChatRoom({ roomKey, meId, draft = "", placeholder = "Wri
       <div ref={box} onScroll={(e) => { const el = e.currentTarget; stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }} className="flex-1 space-y-3 overflow-y-auto p-4" role="log" aria-live="polite" aria-label="Messages">
         {ready && msgs.length === 0 && <p className="py-10 text-center text-sm text-[var(--mut)]">{empty}</p>}
         {msgs.map((m) => { const mine = m.userId === meId && !m.fromStaff; return (
-          <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+          <div key={m.id} className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"}`}>
+            {!mine && !m.fromStaff && <Avatar name={m.name} image={m.image} size={28} />}
             <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 ${m.hidden ? "border border-dashed border-[var(--line)] text-[var(--mut)]" : mine ? "grad-brand" : m.fromStaff ? "grad-dark" : "bg-[var(--line)]"}`}>
               {!mine && !m.hidden && <p className={`text-xs font-semibold ${m.fromStaff ? "text-lime-givar" : "text-[var(--mut)]"}`}>{m.name}{m.fromStaff && " · staff"}</p>}
               <p className="whitespace-pre-wrap break-words text-sm">{m.hidden ? "This message was removed by a moderator." : m.body}</p>

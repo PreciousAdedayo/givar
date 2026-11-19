@@ -18,7 +18,7 @@ export default async function AdminNotifications({ searchParams }: { searchParam
   const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : "0%");
   return (
     <>
-      <PageHead title="Notifications" desc="Send an announcement to users' notification bell. See what the system has sent this week." />
+      <PageHead title="Notifications" desc="Send in-app announcements and optionally queue branded email. Track notification opens and email delivery." />
       {searchParams.sent && <p role="status" className="grad-soft mb-4 rounded-xl p-3 text-sm">Sent to {Number(searchParams.sent).toLocaleString()} user(s).</p>}
       {searchParams.err && <p role="alert" className="mb-4 rounded-xl bg-red-500/15 p-3 text-sm text-red-500">{ERR[searchParams.err] ?? "Something went wrong."}</p>}
       <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
@@ -29,9 +29,10 @@ export default async function AdminNotifications({ searchParams }: { searchParam
           <label className="block text-sm font-medium">Title<input name="title" maxLength={80} required className={`${inputCls} mt-1`} placeholder="New: contests with free entry" /></label>
           <label className="block text-sm font-medium">Message<textarea name="body" rows={3} maxLength={300} required className={`${inputCls} mt-1`} /></label>
           <label className="block text-sm font-medium">Link when tapped (optional)<input name="href" placeholder="/contests" className={`${inputCls} mt-1`} /></label>
+          <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="sendEmail" className="mt-1" />Also email recipients who have an email address. Emails are queued and sent in the background.</label>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="confirm" required className="mt-1" />I understand this appears in these users&apos; notifications right away and cannot be unsent.</label>
           <button className={btnCls}>Send announcement</button>
-          <p className="text-xs text-[var(--mut)]">Announcements are in-app only. They are not emailed.</p>
+          <p className="text-xs text-[var(--mut)]">Email delivery respects each user’s email-news preference. Users without email addresses or with email-news turned off still receive the in-app announcement.</p>
         </form>
         <div className="space-y-4">
           <Card title="Sent by the system (7 days)">{totals.length === 0 ? <p className="text-sm text-[var(--mut)]">Nothing yet.</p> : <ul className="space-y-2 text-sm">{totals.map((t) => <li key={t.type} className="flex justify-between"><span>{t.type.toLowerCase()}</span><span className="text-[var(--mut)]">{t._count.toLocaleString()}</span></li>)}</ul>}</Card>
